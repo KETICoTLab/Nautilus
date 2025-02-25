@@ -4,7 +4,7 @@
 set -e
 
 # 📌 현재 스크립트 위치를 기준으로 경로 설정
-TARGET_HOST= "localhost"
+TARGET_HOST="localhost"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLAYBOOK_PATH="$SCRIPT_DIR/nautilus/nautilus/core/communicate/master_playbook.yaml"
 REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
