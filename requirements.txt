@@ -2,14 +2,7 @@ fastapi
 uvicorn
 asyncpg
 pydantic
-json
-os
-argparse
-subprocess
-sys
 docker
 minio
-io
 uuid
 datetime
-ansible
