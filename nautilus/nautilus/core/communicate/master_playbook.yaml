@@ -1,0 +1,210 @@
+---
+- name: Install and Configure Kubernetes Cluster
+  hosts: "{{ target_host }}"
+  become: yes
+  vars:
+    kube_version: "1.32.0"
+    cni_plugin: "calico"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+  tasks:
+  # - name: Ensure ~/.ssh directory exists
+  #   file:
+  #     path: ~/.ssh
+  #     state: directory
+  #     mode: '0700'
+
+  # - name: Copy public key to remote server
+  #   authorized_key:
+  #     user: "{{ ansible_user }}"
+  #     state: present
+  #     key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        
+  - name: Update system packages
+    apt:
+      update_cache: yes
+      upgrade: dist
+
+  - name: Install required dependencies
+    apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gpg
+      state: present
+
+  - name: Create directory for Kubernetes keyring if not exists
+    file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+      
+
+  - name: Add Docker GPG key
+    get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/keyrings/docker.asc
+      mode: '0644'
+
+  - name: Add Docker repository to apt sources
+    shell: |
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    args:
+      creates: /etc/apt/sources.list.d/docker.list
+
+  - name: Add Kubernetes GPG key
+    get_url:
+      url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+      dest: /tmp/Release.key
+
+  - name: Convert Kubernetes GPG key to keyring format
+    command: gpg --dearmor --batch --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/Release.key
+
+  - name: Add Kubernetes apt repository
+    copy:
+      dest: /etc/apt/sources.list.d/kubernetes.list
+      content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /'
+
+  - name: Update apt cache after adding Kubernetes repo
+    apt:
+      update_cache: yes
+
+  - name: Install Docker, containerd
+    apt:
+      name:
+        - docker-ce
+        - docker-ce-cli 
+        - containerd.io
+      state: present
+
+  - name: Start containerd service
+    systemd:
+      name: containerd
+      state: started
+      enabled: yes
+
+  - name: Start Docker service
+    systemd:
+      name: docker
+      state: started
+      enabled: yes
+
+  - name: Install kubeadm, kubelet, and kubectl
+    apt:
+      name:
+        - kubelet
+        - kubeadm
+        - kubectl
+      state: present
+      update_cache: yes
+
+  - name: Hold Kubernetes packages at current version
+    shell : |
+      apt-mark hold kubelet kubeadm kubectl
+    args:
+      warn: false
+
+  - name: Enable and start kubelet service
+    systemd:
+      name: kubelet
+      enabled: yes
+      state: started
+
+  - name: Disable swap
+    command: swapoff -a
+    args:
+      warn: false
+
+  - name: Ensure swap is disabled in fstab
+    replace:
+      path: /etc/fstab
+      regexp: '^.*swap.*$'
+      replace: ''
+
+ - name: Initialize Kubernetes cluster (only on master node)
+   command: kubeadm init --pod-network-cidr=192.168.0.0/16
+
+ - name: Configure kubectl for the root user
+   command: >
+     bash -c "mkdir -p $HOME/.kube && cp /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config"
+
+ - name: Deploy network plugin (Calico)
+   shell: |
+     kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+
+  - name: Configure containerd on worker nodes
+    block:
+      - name: Generate default containerd configuration
+        command: containerd config default
+        register: containerd_config
+        become: true
+
+      - name: Write the containerd configuration to file
+        copy:
+          content: "{{ containerd_config.stdout }}"
+          dest: /etc/containerd/config.toml
+        become: true        
+
+      - name: Enable SystemdCgroup in containerd configuration
+        replace:
+          path: /etc/containerd/config.toml
+          regexp: '^\s*SystemdCgroup = false$'
+          replace: '            SystemdCgroup = true'
+
+      - name: Create Docker configuration directory
+        file:
+          path: /etc/docker
+          state: directory
+
+      - name: Configure Docker daemon
+        copy:
+          dest: /etc/docker/daemon.json
+          content: |
+            {
+              "exec-opts": ["native.cgroupdriver=systemd"],
+              "log-driver": "json-file",
+              "log-opts": {
+                "max-size": "100m"
+              },
+              "storage-driver": "overlay2"
+            }
+
+      - name: Reload systemd configuration
+        command: systemctl daemon-reload
+
+      - name: Restart containerd service
+        systemd:
+          name: containerd
+          state: restarted
+          enabled: yes
+
+      - name: Restart Docker service
+        systemd:
+          name: docker
+          state: restarted
+          enabled: yes
+
+      - name: Restart kubelet service
+        systemd:
+          name: kubelet
+          state: restarted
+          enabled: yes
+
+  # - name: Generate kubeadm join command
+  #   when: inventory_hostname == groups['master'][0]
+  #   command: kubeadm token create --print-join-command
+  #   register: join_command
+
+  # - name: Share kubeadm join command with all nodes
+  #   when: inventory_hostname == groups['master'][0]
+  #   set_fact:
+  #     kubeadm_join_command: "{{ join_command.stdout }}"
+
+  # - name: Join worker nodes to the cluster
+  #   when: inventory_hostname != groups['master'][0]
+  #   command: "{{ hostvars[groups['master'][0]].kubeadm_join_command }}"
+
