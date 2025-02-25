@@ -6,7 +6,7 @@ set -e
 # 📌 현재 스크립트 위치를 기준으로 경로 설정
 TARGET_HOST= "localhost"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLAYBOOK_PATH="$SCRIPT_DIR/nautilus/core/communicate/master_playbook.yaml"
+PLAYBOOK_PATH="$SCRIPT_DIR/nautilus/nautilus/core/communicate/master_playbook.yaml"
 REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
 # 📌 Ansible이 설치되어 있는지 확인
