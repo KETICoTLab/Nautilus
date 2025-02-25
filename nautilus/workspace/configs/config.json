@@ -1,0 +1,10 @@
+{
+    "project_id":"id_test",
+    "project_name": "name_test",
+    "global_iteration": 3,
+    "number_of_client": 4,
+    "local_epoch": 3,
+    "aggregate_method": "fedavg",
+    "client_train_file_location": "/workspace/pt/src/cifar10_fl.py",
+    "client_info":{"site-1":"A"}
+}

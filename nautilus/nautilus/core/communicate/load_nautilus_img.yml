@@ -1,0 +1,46 @@
+---
+- name: Download MinIO image tar and load into containerd
+  hosts: "{{ target_host }}"
+  become: yes  # Root 권한 필요
+  tasks:
+
+    # Node에 등록하면서 깔았다고 가정
+    # - name: Install required packages (mc, containerd)
+    #   ansible.builtin.package:
+    #     name:
+    #       - mc
+    #       - containerd
+    #     state: present
+
+   - name: Print target host
+      ansible.builtin.debug:
+        msg: "Running on {{ target_host }}"
+        
+    - name: Ensure MinIO Client (mc) is configured
+      ansible.builtin.command:
+        cmd: mc alias set myminio http://minio-server:9000 minio minio123
+      changed_when: false
+
+    - name: Download tar file from MinIO
+      ansible.builtin.command:
+        cmd: mc cp myminio/images/nautilus-pv-updated.tar /tmp/nautilus-pv-updated.tar
+      args:
+        removes: /tmp/nautilus-pv-updated.tar  # 기존 파일 삭제 후 다운로드
+
+    - name: Check if image exists in containerd
+      ansible.builtin.shell: "ctr -n k8s.io images list | grep 'nautilus-pv-updated:latest' || true"
+      register: image_check
+      changed_when: false
+
+    - name: Remove existing image if found
+      ansible.builtin.command: "ctr -n k8s.io images remove nautilus-pv-updated:latest"
+      when: image_check.stdout != ""
+
+    - name: Load the image into containerd
+      ansible.builtin.command:
+        cmd: ctr -n k8s.io images import /tmp/nautilus-pv-updated.tar
+      register: result
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg: "{{ result.stdout }}"

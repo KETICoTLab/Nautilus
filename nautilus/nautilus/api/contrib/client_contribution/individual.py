@@ -1,0 +1,1 @@
+# individual contribution method
