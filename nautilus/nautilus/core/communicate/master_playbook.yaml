@@ -124,16 +124,16 @@
       regexp: '^.*swap.*$'
       replace: ''
 
- - name: Initialize Kubernetes cluster (only on master node)
-   command: kubeadm init --pod-network-cidr=192.168.0.0/16
+  - name: Initialize Kubernetes cluster (only on master node)
+    command: kubeadm init --pod-network-cidr=192.168.0.0/16
 
- - name: Configure kubectl for the root user
-   command: >
-     bash -c "mkdir -p $HOME/.kube && cp /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config"
+  - name: Configure kubectl for the root user
+    command: >
+      bash -c "mkdir -p $HOME/.kube && cp /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config"
 
- - name: Deploy network plugin (Calico)
-   shell: |
-     kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+  - name: Deploy network plugin (Calico)
+    shell: |
+      kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
 
   - name: Configure containerd on worker nodes
