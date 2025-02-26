@@ -5,6 +5,7 @@ set -e
 
 # 📌 현재 스크립트 위치를 기준으로 경로 설정
 TARGET_HOST="localhost"
+PASSWARD="keti123"  # sudo 비밀번호 설정
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLAYBOOK_PATH="$SCRIPT_DIR/nautilus/nautilus/core/communicate/master_playbook.yaml"
 REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
@@ -54,7 +55,15 @@ else
     echo "⚠️ requirements.txt not found. Skipping Python dependencies installation."
 fi
 
-# 📌 Ansible Playbook 실행
+# 📌 containerd 설정 적용
+echo "🚀 Configuring containerd..."
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo systemctl restart containerd
+echo "✅ containerd configuration applied successfully!"
+
+# 📌 Ansible Playbook 실행 (패스워드 자동 적용)
 echo "🚀 Running Ansible Playbook: $PLAYBOOK_PATH"
-ansible-playbook "$PLAYBOOK_PATH" --extra-vars "target_host=$TARGET_HOST"
+echo "$PASSWARD" | ansible-playbook "$PLAYBOOK_PATH" --extra-vars "target_host=$TARGET_HOST ansible_become_pass=$PASSWARD"
 echo "✅ Setup completed successfully!"
