@@ -38,7 +38,12 @@
       dest: ../../../../init-scripts/init_table.sql
 
   - name: Start PostgreSQL container
-    command: docker-compose -f ../../../../init-scripts/docker-compose.yml up -d
+    command: docker-compose -f ./docker-compose.yml up -d
+    args:
+      chdir: ../../../../init-scripts/
+
+  - name: Ensure tables are created in PostgreSQL
+    command: docker exec -i nautilus_postgres psql -U postgres -d nautilus_db -f /docker-entrypoint-initdb.d/init_table.sql
 
   - name: Add Docker GPG key
     get_url:
