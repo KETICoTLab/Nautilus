@@ -56,5 +56,5 @@ fi
 
 # 📌 Ansible Playbook 실행
 echo "🚀 Running Ansible Playbook: $PLAYBOOK_PATH"
-ansible-playbook "$PLAYBOOK_PATH" --extra-vars target_host= "$TARGET_HOST"
+ansible-playbook "$PLAYBOOK_PATH" --extra-vars "target_host=$TARGET_HOST"
 echo "✅ Setup completed successfully!"
