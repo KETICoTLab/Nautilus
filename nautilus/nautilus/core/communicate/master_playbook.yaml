@@ -1,5 +1,5 @@
 ---
-- name: Install and Configure Kubernetes Cluster
+- name: Install and Configure Kubernetes Cluster with PostgreSQL
   hosts: "{{ target_host }}"
   become: yes
   vars:
@@ -22,13 +22,23 @@
         - gpg
       state: present
 
-  - name: Create directory for Kubernetes keyring if not exists
-    file:
-      path: /etc/apt/keyrings
-      state: directory
-      mode: '0755'
-      owner: root
-      group: root
+  - name: Install Docker Compose
+    apt:
+      name: docker-compose
+      state: present
+
+  - name: Copy docker-compose.yml file
+    copy:
+      src: ../../init-scripts/docker-compose.yml
+      dest: ../../init-scripts/docker-compose.yml
+
+  - name: Copy init SQL scripts
+    copy:
+      src: ../../init-scripts/init_table.sql
+      dest: ../../init-scripts/init_table.sql
+
+  - name: Start PostgreSQL container
+    command: docker-compose -f ../../init-scripts/docker-compose.yml up -d
 
   - name: Add Docker GPG key
     get_url:
