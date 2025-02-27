@@ -1,21 +1,5 @@
-"""
-provision.py
-
-Nautilus 플랫폼에서 마스터 노드에서 실행되어 연합 학습(Federated Learning) 환경을 구축하고 프로비저닝(provisioning)을 수행함.  
-주요 기능은 다음과 같음:
-
-0. config파일을 통해 provision을 위한 project.yml 생성
-1. MinIO에서 학습 환경을 위한 Docker 기본 이미지 다운로드
-2. 다운로드한 Docker 이미지를 로컬 환경에 로드
-3. 컨테이너 실행 후 project.yml 파일을 컨테이너 내부로 복사
-4. 프로비저닝 스크립트 실행 및 학습 환경 설정
-5. 변경된 컨테이너를 새로운 Docker 이미지로 커밋
-6. 생성된 새로운 Docker 이미지를 MinIO에 업로드하여 저장
-
-이 과정을 통해 Nautilus 플랫폼의 연합 학습 인프라를 자동으로 설정하고, 학습을 수행할 수 있도록 준비.
-"""
-
 import os
+import socket
 import docker
 import argparse
 from minio import Minio
@@ -35,9 +19,21 @@ from nautilus.util.auto_save.utils import (
     upload_to_minio
 )
 
+def get_host_ip():
+    """Get the server's IP address."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Google DNS 서버로 연결하여 IP 조회
+        ip_address = s.getsockname()[0]
+        s.close()
+        return ip_address
+    except Exception as e:
+        print(f"Failed to get host IP: {e}")
+        return "localhost"
+
 def deploy():
     """Execute the provision & deployment process."""
-    MINIO_ENDPOINT = "http://10.252.73.35:9000"
+    MINIO_ENDPOINT = "http://localhost:9000"
     MINIO_BUCKET = "images"
     IMAGE_NAME = "nautilus-default-img.tar"
     LOCAL_WORKSPACE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -72,14 +68,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # 서버의 IP 주소 가져오기
+    host_ip = get_host_ip()
+
     # "HOST": client측에서 post전송을 위한 정보
     config_data = {
         "project_id": args.project_id,
         "project_name": args.project_name,
         "number_of_client": args.number_of_client,
-        "target_hosts":[],
-        "client_info":{},
-        "HOST" = "http://10.252.73.241:8000"
+        "target_hosts": [],
+        "client_info": {},
+        "HOST": f"http://{host_ip}:8000"
     }
     
     # Save config as JSON

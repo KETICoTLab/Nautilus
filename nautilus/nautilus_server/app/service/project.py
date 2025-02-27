@@ -29,9 +29,26 @@ async def create_project(data: ProjectCreate, pool):
     print(f"Running provision.py: {' '.join(provision_command)}")
     
     try:
-        subprocess.Popen(provision_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # * 실시간 로그 출력하도록 변경
+        process = subprocess.Popen(
+            provision_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True  # * 문자열로 변환하여 실시간 출력
+        )
+
+        # * 표준 출력 및 오류 로그 실시간 출력
+        for line in process.stdout:
+            print(f"[provision.py LOG]: {line.strip()}")
+
+        for line in process.stderr:
+            print(f"[provision.py ERROR]: {line.strip()}")
+
+        process.wait()  # * 프로세스 종료까지 대기
+        print(f"* provision.py finished with exit code {process.returncode}")
+
     except Exception as e:
-        print(f"Provisioning failed: {e}")
+        print(f"* provision failed: {e}")
         
     return Project(**row)
 

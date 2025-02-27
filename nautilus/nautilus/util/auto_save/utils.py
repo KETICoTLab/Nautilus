@@ -22,6 +22,8 @@ def read_json_file(file_name: str) -> Any:
 def write_config_to_json(data: Any, file_name: str) -> None:
     """JSON 데이터를 받아서 지정된 파일명으로 저장하는 함수"""
     config_path = os.path.join(os.path.dirname(__file__), "../../../workspace/configs", f"{file_name}_config.json")
+    print("write_config_to_json")
+    print(config_path)
     try:
         os.makedirs(os.path.dirname(config_path), exist_ok=True)  # 디렉토리 자동 생성
         with open(config_path, 'w', encoding='utf-8') as f:

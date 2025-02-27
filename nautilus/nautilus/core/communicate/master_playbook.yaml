@@ -45,6 +45,21 @@
   - name: Ensure tables are created in PostgreSQL
     command: docker exec -i nautilus_postgres psql -U postgres -d nautilus_db -f /docker-entrypoint-initdb.d/init_table.sql
 
+  - name: Deploy MinIO using Docker
+    command: docker run -d --name minio --restart always -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=admin -e MINIO_ROOT_PASSWORD=admin123 minio/minio server /data --console-address ":9001"
+
+  - name: Install MinIO client (mc)
+    get_url:
+      url: https://dl.min.io/client/mc/release/linux-amd64/mc
+      dest: /usr/local/bin/mc
+      mode: '0755'
+
+  - name: Configure MinIO client
+    command: mc alias set myminio http://127.0.0.1:9000 admin admin123
+
+  - name: Create MinIO bucket for images
+    command: mc mb myminio/images
+    
   - name: Add Docker GPG key
     get_url:
       url: https://download.docker.com/linux/ubuntu/gpg
