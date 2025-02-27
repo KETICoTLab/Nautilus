@@ -8,17 +8,20 @@ from nautilus.util.auto_save.utils import (
 from nautilus.core.communicate.validation import (
     load_nautilus_image,
     apply_nautilus_deployment,
-    copy_train_py_to_container,
+    copy_local_to_container,
     execute_command
 )
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-def main(config_path):
+def main(config_name):
     """Config 파일을 로드하여 Nautilus 배포 및 실행"""
+    config_path = os.path.join(BASE_DIR, "workspace", "configs", config_name)
+    print(f"Load config: {config_path}")
     # Config 파일 로드
     with open(config_path, "r") as f:
         config_data = json.load(f)
 
+    print(f"Load config_data: {config_data}")
     # Config 데이터 추출
     project_id = config_data["project_id"]
     target_hosts = config_data["target_hosts"]
@@ -47,7 +50,7 @@ def main(config_path):
         apply_nautilus_deployment(project_id=project_id, site=site, node_name=node_name)
 
         # 3. Train 파일 컨테이너에 복사
-        copy_train_py_to_container(pod_name=pod_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
+        copy_local_to_container(pod_name=pod_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
 
         # 4. simulation 실행
         execute_command(pod_name=pod_name, command=command, namespace=namespace)
