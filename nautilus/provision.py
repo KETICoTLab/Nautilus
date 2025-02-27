@@ -51,7 +51,7 @@ def deploy():
     image_id = get_docker_image_id(docker_client, "nautilus-default-img:latest")
     container = run_docker_container(docker_client, CONTAINER_NAME, image_id)
     
-    copy_file_to_container(container, os.path.join(LOCAL_WORKSPACE, "provisioning/project.yml"), "/workspace/nautilus/workspace/provisioning/")
+    copy_file_to_container(container, os.path.join(LOCAL_WORKSPACE, "nautilus/workspace/provisioning/project.yml"), "/workspace/nautilus/workspace/provisioning/")
     execute_script_in_container(container, "/workspace/nautilus/nautilus/api/etc/provision.py")
     commit_docker_container(docker_client, container, NEW_IMAGE_NAME)
 
