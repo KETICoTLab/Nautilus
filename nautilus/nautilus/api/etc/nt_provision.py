@@ -62,7 +62,7 @@ def handle_provision(args):
 
     # main project file
     project_file = args.project_file
-    current_project_yml = os.path.join(current_path, "project.yml")
+    current_project_yml = "/workspace/nautilus/workspace/provisioning/project.yml"
 
     if has_no_arguments() and not os.path.exists(current_project_yml):
         files = {"1": "ha_project.yml", "2": "dummy_project.yml", "3": None}
