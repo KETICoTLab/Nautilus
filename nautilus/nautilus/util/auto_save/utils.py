@@ -106,7 +106,7 @@ def run_shell_script():
         print(f"스크립트 실행 중 오류 발생: {e}")
 
 
-def set_minio_client(endpoint="http://10.252.73.35:9000", access_key="minio", secret_key="minio123"):
+def set_minio_client(endpoint="http://localhost:9000", access_key="minio", secret_key="minio123"):
     """MinIO 클라이언트 초기화"""
     print("[INFO] MinIO 클라이언트 초기화 중...")
     return Minio(endpoint.replace("http://", ""), access_key=access_key, secret_key=secret_key, secure=False)
