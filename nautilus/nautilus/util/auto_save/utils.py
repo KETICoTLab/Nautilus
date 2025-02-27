@@ -138,6 +138,7 @@ def download_from_minio(minio_client, bucket, object_name, local_path):
 def load_docker_image(client, image_path):
     """Docker 이미지 스트리밍 로드 (OOM 방지 + 프로그레스 바)"""
     print(f"[INFO] Docker 이미지 로드 시작: {image_path}")
+    client = docker.DockerClient(base_url='unix://var/run/docker.sock', timeout=1200) # 15분 타임아웃 설정
 
     file_size = os.path.getsize(image_path)  # 파일 크기 가져오기
 
