@@ -78,7 +78,7 @@ if __name__ == "__main__":
         "number_of_client": args.number_of_client,
         "target_hosts": [],
         "client_info": {},
-        "client_list": []
+        "client_list": [],
         "HOST": f"http://{host_ip}:8000"
     }
     
