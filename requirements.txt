@@ -6,3 +6,4 @@ docker
 minio
 uuid
 datetime
+pyyaml
