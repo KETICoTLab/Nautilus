@@ -58,10 +58,6 @@
   - name: Configure MinIO client
     command: mc alias set myminio http://127.0.0.1:9000 admin admin123
 
-  - name: Create MinIO bucket for images if not exists
-    command: mc mb myminio/images
-    when: "'images/' not in minio_buckets.stdout"
-
   - name: Add Docker GPG key
     get_url:
       url: https://download.docker.com/linux/ubuntu/gpg
