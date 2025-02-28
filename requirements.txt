@@ -12,3 +12,4 @@ torch
 numpy
 nvflare
 ansible
+kubernetes
