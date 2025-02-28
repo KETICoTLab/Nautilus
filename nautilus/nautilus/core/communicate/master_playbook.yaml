@@ -58,6 +58,12 @@
   - name: Configure MinIO client
     command: mc alias set myminio http://127.0.0.1:9000 admin admin123
 
+  - name: Ensure MinIO bucket for images exists
+    command: mc mb myminio/images || true
+
+  - name: Set public access policy for the bucket
+    command: mc anonymous set public myminio/images
+
   - name: Add Docker GPG key
     get_url:
       url: https://download.docker.com/linux/ubuntu/gpg
@@ -144,8 +150,6 @@
 
   - name: Disable swap
     command: swapoff -a
-    args:
-      warn: false
 
   - name: Ensure swap is disabled in fstab
     replace:
