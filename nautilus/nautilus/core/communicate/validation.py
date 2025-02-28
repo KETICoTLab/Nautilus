@@ -1,6 +1,6 @@
-# from k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container
-# from containerd import is_image_exists, remove_containerd_image, load_containerd_image
-# from minio_storage import pull_pv_image_tar_from_minio
+from k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container
+from containerd import is_image_exists, remove_containerd_image, load_containerd_image
+from minio_storage import pull_pv_image_tar_from_minio
 import os
 import subprocess
 
@@ -41,13 +41,12 @@ def apply_nautilus_deployment(project_id: str, site: int, node_name: str):
 ### /workspace/nautilus/nautilus/simulation/src 위치에 train.py 파일 전송
 def copy_local_to_container(pod_name: str, local_file_path: str, container_path: str, namespace: str = "nautilus", type: str = "file"):
   print(f"copy_local_to_container: namespace: {namespace}, pod_name: {pod_name}, local_file_path: {local_file_path}, container_path: {container_path}, type: {type}")
-  # copy_to_container(pod_name, namespace, local_file_path, container_path, type)
+  copy_to_container(pod_name, namespace, local_file_path, container_path, type)
 
 ### /workspace/nautilus/nautilus/simulation/fedavg_script_runner_pt.py 실행
 def execute_command(pod_name: str, command: str, namespace: str = "nautilus"):
   # pod_name = "" 
   # command = "" # simulation 실행 / job 실행 등 command 넣으면 됨
   print(f"execute_command: namespace: {namespace}, pod_name: {pod_name}, command: {command}")
-
-  # connect_get_namespaced_pod_exec(namespace, pod_name, command)
+  connect_get_namespaced_pod_exec(namespace, pod_name, command)
      
