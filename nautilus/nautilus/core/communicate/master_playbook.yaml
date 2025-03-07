@@ -1,6 +1,6 @@
 ---
-- name: Install and Configure Kubernetes Cluster with PostgreSQL
-  hosts: "{{ target_host }}"
+- name: Install and Configure Kubernetes Cluster with PostgreSQL and MinIO
+  hosts: "localhost"
   become: yes
   vars:
     kube_version: "1.32.0"
@@ -27,27 +27,22 @@
       name: docker-compose
       state: present
 
-  - name: Copy docker-compose.yml file
-    copy:
-      src: ../../../../init-scripts/docker-compose.yml
-      dest: ../../../../init-scripts/docker-compose.yml
-
-  - name: Copy init SQL scripts
-    copy:
-      src: ../../../../init-scripts/init_table.sql
-      dest: ../../../../init-scripts/init_table.sql
-
-  - name: Start PostgreSQL container
-    command: docker-compose -f ./docker-compose.yml up -d
-    args:
-      chdir: ../../../../init-scripts/
-
-  - name: Ensure tables are created in PostgreSQL
-    command: docker exec -i nautilus_postgres psql -U postgres -d nautilus_db -f /docker-entrypoint-initdb.d/init_table.sql
-
-
   - name: Deploy MinIO using Docker
-    command: docker run -d --name minio --restart always -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=admin -e MINIO_ROOT_PASSWORD=admin123 minio/minio server /data --console-address ":9001"
+    command: >
+      docker run -d --name minio --restart always
+      -p 9000:9000 -p 9001:9001
+      -e MINIO_ACCESS_KEY=minio
+      -e MINIO_SECRET_KEY=minio123
+      -e TZ=Asia/Seoul
+      -e LANG=ko_KR.utf8
+      minio/minio server --console-address ":9001" /storage
+
+  - name: Wait for MinIO to be ready
+    wait_for:
+      host: 127.0.0.1
+      port: 9000
+      delay: 5
+      timeout: 60
 
   - name: Install MinIO client (mc)
     get_url:
@@ -55,49 +50,36 @@
       dest: /usr/local/bin/mc
       mode: '0755'
 
-  - name: Configure MinIO client
-    command: mc alias set myminio http://127.0.0.1:9000 admin admin123
+  - name: Configure MinIO client alias
+    command: /usr/local/bin/mc alias set myminio http://127.0.0.1:9000 minio minio123
+
+  - name: Verify MinIO alias was created
+    command: /usr/local/bin/mc ls
+    register: mc_alias_output
+    changed_when: false
+
+  - name: Show MinIO alias output
+    debug:
+      var: mc_alias_output.stdout_lines
 
   - name: Ensure MinIO bucket for images exists
-    command: mc mb myminio/images || true
+    command: /usr/local/bin/mc mb myminio/images || true
 
   - name: Set public access policy for the bucket
-    command: mc anonymous set public myminio/images
+    command: /usr/local/bin/mc anonymous set public myminio/images
+   
+  - name: Ensure MinIO bucket exists
+    command: /usr/local/bin/mc mb myminio/images
+    ignore_errors: yes  # Ignore if the bucket already exists
 
-  - name: Add Docker GPG key
-    get_url:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      dest: /etc/apt/keyrings/docker.asc
-      mode: '0644'
-
-  - name: Add Docker repository to apt sources
-    shell: |
-      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    args:
-      creates: /etc/apt/sources.list.d/docker.list
-
-  - name: Add Kubernetes GPG key
-    get_url:
-      url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
-      dest: /tmp/Release.key
-
-  - name: Convert Kubernetes GPG key to keyring format
-    command: gpg --dearmor --batch --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/Release.key
-
-  - name: Add Kubernetes apt repository
-    copy:
-      dest: /etc/apt/sources.list.d/kubernetes.list
-      content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /'
-
-  - name: Update apt cache after adding repositories
-    apt:
-      update_cache: yes
+  - name: Upload image to MinIO
+    command: /usr/local/bin/mc cp /home/cotlab/workspace/Nautilus/nautilus/workspace/images/nautilus-pv-updated.tar myminio/images/
 
   - name: Install Docker, containerd
     apt:
       name:
         - docker-ce
-        - docker-ce-cli 
+        - docker-ce-cli
         - containerd.io
       state: present
 

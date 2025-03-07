@@ -36,7 +36,7 @@ def main(config_name):
         site = i + 1  # site-1, site-2, ... 순차 증가
         node_name = client_info.get(f"site-{site}", f"default-node-{site}")  # site에 매핑된 data_id
         pod_name = f"{project_id}-site-{site}"
-        train_py_path = os.path.join(BASE_DIR, "nautilus", "simulation", "src", "train.py")
+        train_py_path = os.path.join(BASE_DIR, "nautilus", "simulation", "src", "hello-pt_cifar10_network.py")
         container_path = "/workspace/nautilus/nautilus/simulation/src"
         namespace = "nautilus-pv-updated"
         command = f'python /workspace/nautilus/nautilus/simulation/fedavg_script_runner_pt.py --host "{HOST}" --project_id "{project_id}" --client_id "{client_list[i]}"'
