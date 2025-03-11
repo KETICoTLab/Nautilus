@@ -3,11 +3,20 @@
   hosts: "localhost"
   become: yes
   vars:
-    kube_version: "1.32.0"
+    kube_version: "1.32.2"
     cni_plugin: "calico"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
   tasks:
+  - name: Remove old Kubernetes configurations
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+      - /etc/kubernetes
+      - /var/lib/etcd
+      - /var/lib/kubelet
+
   - name: Update system packages
     apt:
       update_cache: yes
@@ -53,35 +62,38 @@
   - name: Configure MinIO client alias
     command: /usr/local/bin/mc alias set myminio http://127.0.0.1:9000 minio minio123
 
-  - name: Verify MinIO alias was created
-    command: /usr/local/bin/mc ls
-    register: mc_alias_output
-    changed_when: false
-
-  - name: Show MinIO alias output
-    debug:
-      var: mc_alias_output.stdout_lines
-
   - name: Ensure MinIO bucket for images exists
     command: /usr/local/bin/mc mb myminio/images || true
 
   - name: Set public access policy for the bucket
     command: /usr/local/bin/mc anonymous set public myminio/images
-   
-  - name: Ensure MinIO bucket exists
-    command: /usr/local/bin/mc mb myminio/images
-    ignore_errors: yes  # Ignore if the bucket already exists
 
   - name: Upload image to MinIO
     command: /usr/local/bin/mc cp /home/cotlab/workspace/Nautilus/nautilus/workspace/images/nautilus-pv-updated.tar myminio/images/
 
-  - name: Install Docker, containerd
+  - name: Install Docker, containerd, and Kubernetes components
     apt:
       name:
         - docker-ce
         - docker-ce-cli
         - containerd.io
+        - kubelet
+        - kubeadm
+        - kubectl
       state: present
+      update_cache: yes
+
+  - name: Hold Kubernetes packages at current version
+    shell: apt-mark hold kubelet kubeadm kubectl
+
+  - name: Enable and start kubelet and containerd services
+    systemd:
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    loop:
+      - containerd
+      - kubelet
 
   - name: Configure containerd (SystemdCgroup)
     block:
@@ -106,30 +118,6 @@
           state: restarted
           enabled: yes
 
-  - name: Start Docker service
-    systemd:
-      name: docker
-      state: started
-      enabled: yes
-
-  - name: Install kubeadm, kubelet, and kubectl
-    apt:
-      name:
-        - kubelet
-        - kubeadm
-        - kubectl
-      state: present
-      update_cache: yes
-
-  - name: Hold Kubernetes packages at current version
-    shell: apt-mark hold kubelet kubeadm kubectl
-
-  - name: Enable and start kubelet service
-    systemd:
-      name: kubelet
-      enabled: yes
-      state: started
-
   - name: Disable swap
     command: swapoff -a
 
@@ -153,10 +141,11 @@
   - name: Pre-pull Kubernetes images
     command: kubeadm config images pull
 
-  - name: Initialize Kubernetes cluster (only on master node)
+  - name: Initialize Kubernetes cluster
     command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
+    register: kubeadm_init_output
 
-  - name: Configure kubectl for the root user
+  - name: Configure kubectl for root user
     shell: |
       mkdir -p $HOME/.kube
       cp /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -164,6 +153,29 @@
 
   - name: Deploy network plugin (Calico)
     shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+  - name: Retrieve join command for worker nodes
+    shell: kubeadm token create --print-join-command
+    register: join_command
+
+  - name: Save join command
+    copy:
+      content: "{{ join_command.stdout }}"
+      dest: /home/ubuntu/kubeadm-join.sh
+      mode: "0755"
+
+  - name: Show join command for worker nodes
+    debug:
+      msg: "{{ join_command.stdout }}"
+
+  - name: Verify cluster status
+    shell: kubectl get nodes
+    register: cluster_nodes
+    changed_when: false
+
+  - name: Display cluster nodes
+    debug:
+      msg: "{{ cluster_nodes.stdout_lines }}"
 
   handlers:
     - name: Reload sysctl

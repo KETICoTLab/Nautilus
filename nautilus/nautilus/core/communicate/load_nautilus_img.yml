@@ -1,16 +1,32 @@
 ---
-- name: Download MinIO image tar and load into containerd
+- name: Download MinIO image tar, load into containerd, and join Kubernetes cluster
   hosts: "{{ target_host }}"
-  become: yes  # Root 권한 필요
+  become: yes  # Run tasks as root
+  vars:
+    minio_server_url: "http://172.30.1.46"
+    minio_server_id: "minio"
+    minio_server_pw: "minio123"
+    minio_bucket_path: "myminio/images/nautilus-pv-updated.tar"
+    local_tar_path: "/tmp/nautilus-pv-updated.tar"
+    containerd_image_name: "nautilus-pv-updated:latest"
+    kube_master_ip: "172.30.1.46"
+    kube_join_token: "egw7x9.8trvdf2hsbbczlrx"
+    kube_discovery_token_ca_cert_hash: "sha256:451bc3ce08552e489c2f02f109063dea35461aa930f3f76e6de076d67e7a31bb"
+
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system
+
   tasks:
 
-    # Node에 등록하면서 깔았다고 가정
-    # - name: Install required packages (mc, containerd)
-    #   ansible.builtin.package:
-    #     name:
-    #       - mc
-    #       - containerd
-    #     state: present
+    - name: Print target host
+      debug:
+        msg: "Running on {{ target_host }}"
+
+    # -------------------------------
+    # Install Required Dependencies
+    # -------------------------------
 
     - name: Update system packages
       apt:
@@ -24,7 +40,52 @@
           - ca-certificates
           - curl
           - gpg
+          - software-properties-common
         state: present
+
+    # -------------------------------
+    # Install Docker & containerd
+    # -------------------------------
+
+    - name: Add Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Ensure /etc/apt/keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker repository
+      shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      args:
+        creates: /etc/apt/sources.list.d/docker.list
+
+    - name: Update apt cache after adding repositories
+      apt:
+        update_cache: yes
+
+    - name: Install Docker and containerd
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Enable and start Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # -------------------------------
+    # Install Kubernetes Components
+    # -------------------------------
 
     - name: Add Kubernetes GPG key
       get_url:
@@ -43,12 +104,6 @@
       apt:
         update_cache: yes
 
-    - name: Install Docker, containerd
-      apt:
-        name:
-          - containerd.io
-        state: present
-
     - name: Install kubeadm, kubelet, and kubectl
       apt:
         name:
@@ -58,14 +113,20 @@
         state: present
         update_cache: yes
 
+
     - name: Hold Kubernetes packages at current version
-      shell: apt-mark hold kubelet kubeadm kubectl
+      command: apt-mark hold kubelet kubeadm kubectl
 
     - name: Enable and start kubelet service
       systemd:
         name: kubelet
         enabled: yes
         state: started
+
+
+    # -------------------------------
+    # System Configuration
+    # -------------------------------
 
     - name: Disable swap
       command: swapoff -a
@@ -110,35 +171,123 @@
             state: restarted
             enabled: yes
 
-    - name: Print target host
-      ansible.builtin.debug:
-        msg: "Running on {{ target_host }}"
-        
-    - name: Ensure MinIO Client (mc) is configured
-      ansible.builtin.command:
-        cmd: mc alias set myminio http://minio-server:9000 minio minio123
+
+
+    # -------------------------------
+    # Install & Configure MinIO Client
+    # -------------------------------
+
+    - name: Ensure MinIO Client (mc) is installed
+      get_url:
+        url: https://dl.min.io/client/mc/release/linux-amd64/mc
+        dest: /usr/local/bin/mc
+        mode: '0755'
+
+    - name: Verify MinIO Client installation
+      command: /usr/local/bin/mc --version
+      register: mc_version
       changed_when: false
 
-    - name: Download tar file from MinIO
-      ansible.builtin.command:
-        cmd: mc cp myminio/images/nautilus-pv-updated.tar /tmp/nautilus-pv-updated.tar
-      args:
-        removes: /tmp/nautilus-pv-updated.tar  # 기존 파일 삭제 후 다운로드
+    - name: Show MinIO Client version
+      debug:
+        msg: "{{ mc_version.stdout }}"
+
+    - name: Ensure MinIO Client (mc) is configured
+      command: /usr/local/bin/mc alias set myminio http://{{ minio_server_url }}:9000 {{ minio_server_id }} {{ minio_server_pw }}
+      register: alias_result
+      changed_when: false
+
+    - name: Show MinIO alias output
+      debug:
+        msg: "{{ alias_result.stdout }}"
+
+    - name: Verify MinIO alias configuration
+      command: /usr/local/bin/mc alias list
+      register: mc_alias_output
+      changed_when: false
+
+    - name: Show MinIO alias list
+      debug:
+        msg: "{{ mc_alias_output.stdout_lines }}"
+
+    # -------------------------------
+    # Download Image Tar File
+    # -------------------------------
+
+#    - name: Download tar file from MinIO
+#      command: /usr/local/bin/mc cp myminio/images/nautilus-pv-updated.tar /tmp/nautilus-pv-updated.tar
+#      register: download_result
+#      failed_when: "'ERROR' in download_result.stderr"
+#      ignore_errors: no
+#    - name: Verify downloaded tar file exists and is not empty
+#      stat:
+#        path: "{{ local_tar_path }}"
+#      register: tar_file_stat
+#    - name: Fail if tar file is missing or empty
+#      fail:
+#        msg: "Error: The file {{ local_tar_path }} was not downloaded correctly!"
+#      when: not tar_file_stat.stat.exists or tar_file_stat.stat.size == 0
+
+    # -------------------------------
+    # Join the Kubernetes Cluster
+    # -------------------------------
+
+    - name: Reset Kubernetes (if needed)
+      command: kubeadm reset -f
+      ignore_errors: yes
+
+    - name: Remove old Kubernetes files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/kubernetes
+        - /var/lib/kubelet
+        - /var/lib/etcd
+
+    - name: Restart kubelet
+      systemd:
+        name: kubelet
+        state: restarted
+
+    - name: Ensure Port 10250 is not in use
+      shell: netstat -tulnp | grep 10250 || true
+      register: port_check
+      changed_when: false
+
+    - name: Kill process using port 10250 (if any)
+      shell: kill -9 $(lsof -t -i:10250) || true
+      when: port_check.stdout != ""
+
+    - name: Join the Kubernetes Cluster
+      command: kubeadm join 172.30.1.46:6443 --token f73clw.04l3p6xt466snwyi --discovery-token-ca-cert-hash sha256:57c1d5663020feb70d6b831fdc9ba7ba96eb07cd74e1779aa9728d90b388d2eb
+      register: kubeadm_join_output
+      changed_when: "'This node has joined the cluster' in kubeadm_join_output.stdout"
+
+    - name: Show kubeadm join output
+      debug:
+        msg: "{{ kubeadm_join_output.stdout }}"
+
+    # -------------------------------
+    # Load Image into containerd
+    # -------------------------------
 
     - name: Check if image exists in containerd
-      ansible.builtin.shell: "ctr -n k8s.io images list | grep 'nautilus-pv-updated:latest' || true"
+      shell: "ctr -n k8s.io images list | grep '{{ containerd_image_name }}' || true"
       register: image_check
       changed_when: false
 
     - name: Remove existing image if found
-      ansible.builtin.command: "ctr -n k8s.io images remove nautilus-pv-updated:latest"
+      command: "ctr -n k8s.io images remove {{ containerd_image_name }}"
       when: image_check.stdout != ""
 
     - name: Load the image into containerd
-      ansible.builtin.command:
-        cmd: ctr -n k8s.io images import /tmp/nautilus-pv-updated.tar
-      register: result
+      command: ctr -n k8s.io images import {{ local_tar_path }}
+      register: import_result
 
-    - name: Show result
-      ansible.builtin.debug:
-        msg: "{{ result.stdout }}"
+    - name: Show containerd import result
+      debug:
+        msg: "{{ import_result.stdout }}"
+
+
+
