@@ -68,8 +68,48 @@
   - name: Set public access policy for the bucket
     command: /usr/local/bin/mc anonymous set public myminio/images
 
+  - name : Get Absolute path of image file
+    set_fact:
+      image_path: "{{ (playbook_dir + '/../../../workspace/images/nautilus-pv-updated.tar') | realpath }}"
+      
   - name: Upload image to MinIO
-    command: /usr/local/bin/mc cp /home/cotlab/workspace/Nautilus/nautilus/workspace/images/nautilus-pv-updated.tar myminio/images/
+    command: "/usr/local/bin/mc cp {{ image_path }} myminio/images/"
+
+  - name: Add Docker GPG key
+    get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/keyrings/docker.asc
+      mode: '0644'
+
+  - name: Ensure /etc/apt/keyrings directory exists
+    file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: '0755'
+
+  - name: Add Docker repository
+    shell: |
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    args:
+      creates: /etc/apt/sources.list.d/docker.list
+
+
+  - name: Add Kubernetes GPG key
+    get_url:
+      url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+      dest: /tmp/Release.key
+
+  - name: Convert Kubernetes GPG key to keyring format
+    command: gpg --dearmor --batch --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/Release.key
+
+  - name: Add Kubernetes apt repository
+    copy:
+      dest: /etc/apt/sources.list.d/kubernetes.list
+      content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /'
+
+  - name: Update apt cache after adding repositories
+    apt:
+      update_cache: yes
 
   - name: Install Docker, containerd, and Kubernetes components
     apt:
@@ -114,9 +154,13 @@
 
       - name: Restart containerd service
         systemd:
-          name: containerd
+          name: "{{ item }}"
           state: restarted
           enabled: yes
+        loop:
+          - docker
+          - kubelet
+          - containerd
 
   - name: Disable swap
     command: swapoff -a

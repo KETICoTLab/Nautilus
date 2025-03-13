@@ -55,13 +55,9 @@ else
     echo "⚠️ requirements.txt not found. Skipping Python dependencies installation."
 fi
 
-# 📌 containerd 설정 적용
-echo "🚀 Configuring containerd..."
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
-sudo systemctl restart containerd
-echo "✅ containerd configuration applied successfully!"
+# 📌 sshpass Install
+echo "🚀 Installing sshpass"
+apt-get install sshpass
 
 # 📌 Ansible Playbook 실행 (패스워드 자동 적용)
 echo "🚀 Running Ansible Playbook: $PLAYBOOK_PATH"

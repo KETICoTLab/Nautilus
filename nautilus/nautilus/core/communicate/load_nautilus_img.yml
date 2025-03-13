@@ -3,16 +3,14 @@
   hosts: "{{ target_host }}"
   become: yes  # Run tasks as root
   vars:
-    minio_server_url: "http://172.30.1.46"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    minio_server_url: "10.252.72.172"
     minio_server_id: "minio"
     minio_server_pw: "minio123"
     minio_bucket_path: "myminio/images/nautilus-pv-updated.tar"
     local_tar_path: "/tmp/nautilus-pv-updated.tar"
     containerd_image_name: "nautilus-pv-updated:latest"
-    kube_master_ip: "172.30.1.46"
-    kube_join_token: "egw7x9.8trvdf2hsbbczlrx"
-    kube_discovery_token_ca_cert_hash: "sha256:451bc3ce08552e489c2f02f109063dea35461aa930f3f76e6de076d67e7a31bb"
-
+    kube_join_command: "kubeadm join 10.252.72.172:6443 --token 70j2mg.emuvzlscqluj6zyd --discovery-token-ca-cert-hash sha256:c562ece7d77e23aeb4a2db0f98cdf45d8b99e49d1c23b635a67eb4c443565328"
 
   handlers:
     - name: Reload sysctl
@@ -214,19 +212,20 @@
     # Download Image Tar File
     # -------------------------------
 
-#    - name: Download tar file from MinIO
-#      command: /usr/local/bin/mc cp myminio/images/nautilus-pv-updated.tar /tmp/nautilus-pv-updated.tar
-#      register: download_result
-#      failed_when: "'ERROR' in download_result.stderr"
-#      ignore_errors: no
-#    - name: Verify downloaded tar file exists and is not empty
-#      stat:
-#        path: "{{ local_tar_path }}"
-#      register: tar_file_stat
-#    - name: Fail if tar file is missing or empty
-#      fail:
-#        msg: "Error: The file {{ local_tar_path }} was not downloaded correctly!"
-#      when: not tar_file_stat.stat.exists or tar_file_stat.stat.size == 0
+    - name: Download tar file from MinIO
+      command: /usr/local/bin/mc cp myminio/images/nautilus-pv-updated.tar /tmp/nautilus-pv-updated.tar
+      register: download_result
+      failed_when: "'ERROR' in download_result.stderr"
+      ignore_errors: no
+      
+    - name: Verify downloaded tar file exists and is not empty
+      stat:
+        path: "{{ local_tar_path }}"
+      register: tar_file_stat
+    - name: Fail if tar file is missing or empty
+      fail:
+        msg: "Error: The file {{ local_tar_path }} was not downloaded correctly!"
+      when: not tar_file_stat.stat.exists or tar_file_stat.stat.size == 0
 
     # -------------------------------
     # Join the Kubernetes Cluster
@@ -260,7 +259,7 @@
       when: port_check.stdout != ""
 
     - name: Join the Kubernetes Cluster
-      command: kubeadm join 172.30.1.46:6443 --token f73clw.04l3p6xt466snwyi --discovery-token-ca-cert-hash sha256:57c1d5663020feb70d6b831fdc9ba7ba96eb07cd74e1779aa9728d90b388d2eb
+      shell: "{{ kube_join_command }}"
       register: kubeadm_join_output
       changed_when: "'This node has joined the cluster' in kubeadm_join_output.stdout"
 
@@ -288,6 +287,3 @@
     - name: Show containerd import result
       debug:
         msg: "{{ import_result.stdout }}"
-
-
-
