@@ -31,12 +31,13 @@ def get_host_ip():
         print(f"Failed to get host IP: {e}")
         return "localhost"
 
+# default-img.tar 위치 지정 필요. 지금 코드는 Nautilus폴더 외부의 workspace에 위치하고 있음을 가정하였음.
 def deploy():
     """Execute the provision & deployment process."""
     MINIO_ENDPOINT = "http://localhost:9000"
     MINIO_BUCKET = "images"
     IMAGE_NAME = "nautilus-default-img.tar"
-    LOCAL_WORKSPACE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    LOCAL_WORKSPACE = os.path.join(os.path.dirname(__file__), "workspace/images/")
     CONTAINER_NAME = "nautilus-container"
     NEW_IMAGE_NAME = "nautilus-pv-updated"
     NEW_IMAGE_TAR = "nautilus-pv-updated.tar"
