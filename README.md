@@ -23,7 +23,7 @@ $ source bin/activate
 
 ```
 (nautilus-env) $ sudo apt install git
-(nautilus-env) $ git clone https://github.com/Nautilus/Nautilus.git
+(nautilus-env) $ git clone https://github.com/KETICoTLab/Nautilus.git
 (nautilus-env) $ chmod +x ./Nautilus/setup.sh
 (nautilus-env) $ ./Nautilus/setup.sh
 ```
@@ -31,6 +31,6 @@ $ source bin/activate
 ### Start nautilus\_server
 
 ```
-(nautilus-env) $ cd nautilus/nautilus_server/
+(nautilus-env) $ cd Nautilus/nautilus/nautilus_server/
 (nautilus-env) $ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
