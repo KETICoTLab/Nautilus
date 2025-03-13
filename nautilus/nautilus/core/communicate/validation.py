@@ -14,7 +14,7 @@ import subprocess
 
 
 def run_ansible_playbook(playbook_path, target_host):
-  command = ["ansible-playbook", playbook_path, "--extra-vars", f"target_host={target_host}"]
+  command = ["bash", "./join_worker_node.sh", target_host]
   process = subprocess.run(command, capture_output=True, text=True)
 
   print("Playbook STDOUT:", process.stdout)
@@ -50,3 +50,4 @@ def execute_command(pod_name: str, command: str, namespace: str = "nautilus"):
   print(f"execute_command: namespace: {namespace}, pod_name: {pod_name}, command: {command}")
   connect_get_namespaced_pod_exec(namespace, pod_name, command)
      
+run_ansible_playbook()

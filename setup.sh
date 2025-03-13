@@ -57,7 +57,7 @@ fi
 
 # 📌 sshpass Install
 echo "🚀 Installing sshpass"
-apt-get install sshpass
+sudo apt-get install sshpass
 
 # 📌 Ansible Playbook 실행 (패스워드 자동 적용)
 echo "🚀 Running Ansible Playbook: $PLAYBOOK_PATH"
