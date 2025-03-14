@@ -1,0 +1,18 @@
+{
+   "project_id": "P-KR-prtest5",
+   "project_name": "prtest5",
+   "number_of_client": 2,
+   "target_hosts": [
+       "10.252.73.241",
+       "10.252.73.87"
+   ],
+   "client_info": {
+       "site-1": "D-KR-data-test1",
+       "site-2": "D-KR-data-test4"
+   },
+   "client_list": [
+       "C-KR-cl-test1",
+       "C-KR-cl-test4"
+   ],
+   "HOST": "http://172.30.1.252:8000"
+}

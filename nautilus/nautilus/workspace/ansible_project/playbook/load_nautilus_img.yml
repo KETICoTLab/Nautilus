@@ -1,0 +1,57 @@
+---
+- name: Load Image into containerd
+  hosts: "{{ target_host }}"
+  become: yes  # Run tasks as root
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    minio_server_url: "10.252.72.172"
+    minio_server_id: "minio"
+    minio_server_pw: "minio123"
+    minio_bucket_path: "myminio/images/nautilus-pv-updated.tar"
+    local_tar_path: "/tmp/nautilus-pv-updated.tar"
+    containerd_image_name: "nautilus-pv-updated:latest"
+    kube_join_command: "kubeadm join 10.252.72.172:6443 --token 70j2mg.emuvzlscqluj6zyd --discovery-token-ca-cert-hash sha256:c562ece7d77e23aeb4a2db0f98cdf45d8b99e49d1c23b635a67eb4c443565328"
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system
+
+  tasks:
+    # -------------------------------
+    # Download Image Tar File
+    # -------------------------------
+
+    - name: Download tar file from MinIO
+      command: /usr/local/bin/mc cp myminio/images/nautilus-pv-updated.tar /tmp/nautilus-pv-updated.tar
+      register: download_result
+      failed_when: "'ERROR' in download_result.stderr"
+      ignore_errors: no
+      
+    - name: Verify downloaded tar file exists and is not empty
+      stat:
+        path: "{{ local_tar_path }}"
+      register: tar_file_stat
+    - name: Fail if tar file is missing or empty
+      fail:
+        msg: "Error: The file {{ local_tar_path }} was not downloaded correctly!"
+      when: not tar_file_stat.stat.exists or tar_file_stat.stat.size == 0
+
+    # -------------------------------
+    # Load Image into containerd
+    # -------------------------------
+    - name: Check if image exists in containerd
+      shell: "ctr -n k8s.io images list | grep '{{ containerd_image_name }}' || true"
+      register: image_check
+      changed_when: false
+
+    - name: Remove existing image if found
+      command: "ctr -n k8s.io images remove {{ containerd_image_name }}"
+      when: image_check.stdout != ""
+
+    - name: Load the image into containerd
+      command: ctr -n k8s.io images import {{ local_tar_path }}
+      register: import_result
+
+    - name: Show containerd import result
+      debug:
+        msg: "{{ import_result.stdout }}"

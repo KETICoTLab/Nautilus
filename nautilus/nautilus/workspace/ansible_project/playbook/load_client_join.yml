@@ -1,0 +1,262 @@
+---
+- name: Download MinIO image tar, load into containerd, and join Kubernetes cluster
+  hosts: "{{ target_host }}"
+  become: yes  # Run tasks as root
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    minio_server_url: "10.252.72.172"
+    minio_server_id: "minio"
+    minio_server_pw: "minio123"
+    minio_bucket_path: "myminio/images/nautilus-pv-updated.tar"
+    local_tar_path: "/tmp/nautilus-pv-updated.tar"
+    containerd_image_name: "nautilus-pv-updated:latest"
+    kube_join_command: "kubeadm join 10.252.72.172:6443 --token 70j2mg.emuvzlscqluj6zyd --discovery-token-ca-cert-hash sha256:c562ece7d77e23aeb4a2db0f98cdf45d8b99e49d1c23b635a67eb4c443565328"
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system
+
+  tasks:
+    - name: Check if openssh-server is installed by attempting to install it (raw module)
+      raw: |
+        if ! rpm -q openssh-server; then
+          yum install -y openssh-server
+        fi
+      when: ansible_ssh_host is defined  # SSH로 연결할 수 있을 때만 실행
+
+    - name: Ensure sshd service is started and enabled
+      systemd:
+        name: sshd
+        state: started
+        enabled: yes
+      when: ansible_ssh_host is defined  # SSH로 연결할 수 있을 때만 실행
+      
+    - name: Print target host
+      debug:
+        msg: "Running on {{ target_host }}"
+
+    # -------------------------------
+    # Install Required Dependencies
+    # -------------------------------
+
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+          - software-properties-common
+        state: present
+
+    # -------------------------------
+    # Install Docker & containerd
+    # -------------------------------
+
+    - name: Add Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Ensure /etc/apt/keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker repository
+      shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      args:
+        creates: /etc/apt/sources.list.d/docker.list
+
+    - name: Update apt cache after adding repositories
+      apt:
+        update_cache: yes
+
+    - name: Install Docker and containerd
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Enable and start Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # -------------------------------
+    # Install Kubernetes Components
+    # -------------------------------
+
+    - name: Add Kubernetes GPG key
+      get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+        dest: /tmp/Release.key
+
+    - name: Convert Kubernetes GPG key to keyring format
+      command: gpg --dearmor --batch --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/Release.key
+
+    - name: Add Kubernetes apt repository
+      copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /'
+
+    - name: Update apt cache after adding repositories
+      apt:
+        update_cache: yes
+
+    - name: Install kubeadm, kubelet, and kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+
+
+    - name: Hold Kubernetes packages at current version
+      command: apt-mark hold kubelet kubeadm kubectl
+
+    - name: Enable and start kubelet service
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: started
+
+
+    # -------------------------------
+    # System Configuration
+    # -------------------------------
+
+    - name: Disable swap
+      command: swapoff -a
+
+    - name: Ensure swap is disabled in fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^.*swap.*$'
+        replace: ''
+
+    - name: Configure sysctl settings for Kubernetes networking
+      copy:
+        dest: /etc/sysctl.d/k8s.conf
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+      notify: Reload sysctl
+
+    - name: Apply sysctl settings
+      command: sysctl --system
+
+    - name: Configure containerd (SystemdCgroup)
+      block:
+        - name: Generate default containerd configuration
+          command: containerd config default
+          register: containerd_config
+
+        - name: Write the containerd configuration to file
+          copy:
+            content: "{{ containerd_config.stdout }}"
+            dest: /etc/containerd/config.toml
+
+        - name: Enable SystemdCgroup in containerd configuration
+          replace:
+            path: /etc/containerd/config.toml
+            regexp: '^\s*SystemdCgroup = false$'
+            replace: 'SystemdCgroup = true'
+
+        - name: Restart containerd service
+          systemd:
+            name: containerd
+            state: restarted
+            enabled: yes
+
+
+
+    # -------------------------------
+    # Install & Configure MinIO Client
+    # -------------------------------
+
+    - name: Ensure MinIO Client (mc) is installed
+      get_url:
+        url: https://dl.min.io/client/mc/release/linux-amd64/mc
+        dest: /usr/local/bin/mc
+        mode: '0755'
+
+    - name: Verify MinIO Client installation
+      command: /usr/local/bin/mc --version
+      register: mc_version
+      changed_when: false
+
+    - name: Show MinIO Client version
+      debug:
+        msg: "{{ mc_version.stdout }}"
+
+    - name: Ensure MinIO Client (mc) is configured
+      command: /usr/local/bin/mc alias set myminio http://{{ minio_server_url }}:9000 {{ minio_server_id }} {{ minio_server_pw }}
+      register: alias_result
+      changed_when: false
+
+    - name: Show MinIO alias output
+      debug:
+        msg: "{{ alias_result.stdout }}"
+
+    - name: Verify MinIO alias configuration
+      command: /usr/local/bin/mc alias list
+      register: mc_alias_output
+      changed_when: false
+
+    - name: Show MinIO alias list
+      debug:
+        msg: "{{ mc_alias_output.stdout_lines }}"
+
+    # -------------------------------
+    # Join the Kubernetes Cluster
+    # -------------------------------
+
+    - name: Reset Kubernetes (if needed)
+      command: kubeadm reset -f
+      ignore_errors: yes
+
+    - name: Remove old Kubernetes files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/kubernetes
+        - /var/lib/kubelet
+        - /var/lib/etcd
+
+    - name: Restart kubelet
+      systemd:
+        name: kubelet
+        state: restarted
+
+    - name: Ensure Port 10250 is not in use
+      shell: netstat -tulnp | grep 10250 || true
+      register: port_check
+      changed_when: false
+
+    - name: Kill process using port 10250 (if any)
+      shell: kill -9 $(lsof -t -i:10250) || true
+      when: port_check.stdout != ""
+
+    - name: Join the Kubernetes Cluster
+      shell: "{{ kube_join_command }}"
+      register: kubeadm_join_output
+      changed_when: "'This node has joined the cluster' in kubeadm_join_output.stdout"
+
+    - name: Show kubeadm join output
+      debug:
+        msg: "{{ kubeadm_join_output.stdout }}"

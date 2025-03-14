@@ -7,8 +7,8 @@ import os
 import subprocess
 from pathlib import Path
 
-ANSIBLE_VAULT_PASS_PATH = "../workspace/ansible_project/inventory/host_vars/vaultpass"
-ANSIBLE_HOST_VARS_DIR = "../workspace/ansible_project/inventory/host_vars"
+ANSIBLE_VAULT_PASS_PATH = "../nautilus/workspace/ansible_project/inventory/host_vars/vaultpass"
+ANSIBLE_HOST_VARS_DIR = "../nautilus/workspace/ansible_project/inventory/host_vars"
 
 async def create_data_provider(data: DataProviderCreate, pool) -> DataProvider:
     data_provider_id = "W-KR-" + data.data_provider_name

@@ -1,0 +1,115 @@
+2025-03-13 07:42:38,001 - SimulatorRunner - INFO - Create the Simulator Server.
+2025-03-13 07:42:38,002 - CoreCell - INFO - server: creating listener on tcp://0:37983
+2025-03-13 07:42:38,019 - CoreCell - INFO - server: created backbone external listener for tcp://0:37983
+2025-03-13 07:42:38,019 - ConnectorManager - INFO - 118: Try start_listener Listener resources: {'secure': False, 'host': 'localhost'}
+2025-03-13 07:42:38,020 - nvflare.fuel.f3.sfm.conn_manager - INFO - Connector [CH00002 PASSIVE tcp://0:48491] is starting
+2025-03-13 07:42:38,521 - CoreCell - INFO - server: created backbone internal listener for tcp://localhost:48491
+2025-03-13 07:42:38,521 - nvflare.fuel.f3.sfm.conn_manager - INFO - Connector [CH00001 PASSIVE tcp://0:37983] is starting
+2025-03-13 07:42:38,523 - SimulatorServer - INFO - max_reg_duration=60.0
+2025-03-13 07:42:38,607 - nvflare.fuel.hci.server.hci - INFO - Starting Admin Server localhost on Port 33321
+2025-03-13 07:42:38,607 - SimulatorRunner - INFO - Deploy the Apps.
+2025-03-13 07:42:38,614 - SimulatorRunner - INFO - Create the simulate clients.
+2025-03-13 07:42:38,617 - Communicator - INFO - Trying to register with server ...
+2025-03-13 07:42:38,617 - ClientManager - INFO - authenticated client site-0
+2025-03-13 07:42:38,618 - ClientManager - INFO - Client: New client site-0@172.17.0.2 joined. Sent token: 88a414cc-21b3-4d3a-b9dd-a77457074a31.  Total clients: 1
+2025-03-13 07:42:38,618 - Communicator - INFO - register RC: ok
+2025-03-13 07:42:38,618 - FederatedClient - INFO - Successfully registered client:site-0 for project simulator_server. Token:88a414cc-21b3-4d3a-b9dd-a77457074a31 SSID:
+2025-03-13 07:42:38,619 - Communicator - INFO - Trying to register with server ...
+2025-03-13 07:42:38,619 - ClientManager - INFO - authenticated client site-1
+2025-03-13 07:42:38,619 - ClientManager - INFO - Client: New client site-1@172.17.0.2 joined. Sent token: 5f7057fa-15b3-4780-9061-20f1f4f8d6c4.  Total clients: 2
+2025-03-13 07:42:38,619 - Communicator - INFO - register RC: ok
+2025-03-13 07:42:38,619 - FederatedClient - INFO - Successfully registered client:site-1 for project simulator_server. Token:5f7057fa-15b3-4780-9061-20f1f4f8d6c4 SSID:
+2025-03-13 07:42:38,620 - SimulatorRunner - INFO - Set the client status ready.
+2025-03-13 07:42:38,620 - SimulatorRunner - INFO - Deploy and start the Server App.
+2025-03-13 07:42:38,621 - Cell - INFO - Register blob CB for channel='server_command', topic='*'
+2025-03-13 07:42:38,621 - Cell - INFO - Register blob CB for channel='aux_communication', topic='*'
+2025-03-13 07:42:38,621 - ServerCommandAgent - INFO - ServerCommandAgent cell register_request_cb: server.simulate_job
+2025-03-13 07:42:40,630 - IntimeModelSelector - INFO - model selection weights control: {}
+2025-03-13 07:42:40,632 - AuxRunner - INFO - registered aux handler for topic __sync_runner__
+2025-03-13 07:42:40,632 - AuxRunner - INFO - registered aux handler for topic __job_heartbeat__
+2025-03-13 07:42:40,632 - AuxRunner - INFO - registered aux handler for topic __task_check__
+2025-03-13 07:42:40,633 - AuxRunner - INFO - registered aux handler for topic RM.RELIABLE_REQUEST
+2025-03-13 07:42:40,633 - AuxRunner - INFO - registered aux handler for topic RM.RELIABLE_REPLY
+2025-03-13 07:42:40,634 - ReliableMessage - INFO - enabled reliable message: max_request_workers=20 query_interval=2.0
+2025-03-13 07:42:40,634 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job]: Server runner starting ...
+2025-03-13 07:42:40,634 - TBAnalyticsReceiver - INFO - [identity=simulator_server, run=simulate_job]: Tensorboard records can be found in /workspace/workspace/nautilus/nautilus/api/contrib/./test/server/simulate_job/tb_events you can view it using `tensorboard --logdir=/workspace/workspace/nautilus/nautilus/api/contrib/./test/server/simulate_job/tb_events`
+2025-03-13 07:42:40,635 - AuxRunner - INFO - registered aux handler for topic fed.event
+2025-03-13 07:42:40,635 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job]: starting workflow controller (<class 'util.job_tools.nt_FedAvg_Pack'>) ...
+2025-03-13 07:42:40,635 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Initializing nautilus model contol workflow.
+2025-03-13 07:42:40,635 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Workflow controller (<class 'util.job_tools.nt_FedAvg_Pack'>) started
+2025-03-13 07:42:40,635 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Beginning model controller run.
+2025-03-13 07:42:40,636 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Start FedAvg.
+2025-03-13 07:42:40,636 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: loading initial model from persistor
+2025-03-13 07:42:40,636 - PTFileModelPersistor - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Both source_ckpt_file_full_name and ckpt_preload_path are not provided. Using the default model weights initialized on the persistor side.
+2025-03-13 07:42:43,083 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Round 0 started.
+2025-03-13 07:42:43,083 - SimulatorClientRunner - INFO - Start the clients run simulation.
+2025-03-13 07:42:43,083 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Sampled clients: ['site-0', 'site-1']
+2025-03-13 07:42:43,084 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Sending task train to ['site-0', 'site-1']
+2025-03-13 07:42:43,084 - WFCommServer - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: scheduled task train
+2025-03-13 07:42:44,085 - SimulatorClientRunner - INFO - Simulate Run client: site-0 on GPU group: 0
+2025-03-13 07:42:44,086 - SimulatorClientRunner - INFO - Simulate Run client: site-1 on GPU group: 0
+2025-03-13 07:42:45,169 - nvflare.fuel.f3.sfm.conn_manager - INFO - Connection [CN00005 127.0.0.1:37983 <= 127.0.0.1:55512] is created: PID: 118
+2025-03-13 07:42:45,184 - nvflare.fuel.f3.sfm.conn_manager - INFO - Connection [CN00006 127.0.0.1:37983 <= 127.0.0.1:55524] is created: PID: 118
+2025-03-13 07:42:46,831 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, task_name=train, task_id=9f1a6f1f-6316-414b-b1d5-af0f85ba07fc]: assigned task to client site-1: name=train, id=9f1a6f1f-6316-414b-b1d5-af0f85ba07fc
+2025-03-13 07:42:46,832 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, task_name=train, task_id=9f1a6f1f-6316-414b-b1d5-af0f85ba07fc]: sent task assignment to client. client_name:site-1 task_id:9f1a6f1f-6316-414b-b1d5-af0f85ba07fc
+2025-03-13 07:42:46,832 - GetTaskCommand - INFO - return task to client.  client_name: site-1  task_name: train   task_id: 9f1a6f1f-6316-414b-b1d5-af0f85ba07fc  sharable_header_task_id: 9f1a6f1f-6316-414b-b1d5-af0f85ba07fc
+2025-03-13 07:42:46,851 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: assigned task to client site-0: name=train, id=e1a1ac94-d7f8-4897-99d2-84daa784a184
+2025-03-13 07:42:46,851 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: sent task assignment to client. client_name:site-0 task_id:e1a1ac94-d7f8-4897-99d2-84daa784a184
+2025-03-13 07:42:46,851 - GetTaskCommand - INFO - return task to client.  client_name: site-0  task_name: train   task_id: e1a1ac94-d7f8-4897-99d2-84daa784a184  sharable_header_task_id: e1a1ac94-d7f8-4897-99d2-84daa784a184
+2025-03-13 07:42:49,409 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job]: got result from client site-1 for task: name=train, id=9f1a6f1f-6316-414b-b1d5-af0f85ba07fc
+2025-03-13 07:42:49,532 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=9f1a6f1f-6316-414b-b1d5-af0f85ba07fc]: finished processing client result by controller
+2025-03-13 07:42:49,534 - SubmitUpdateCommand - INFO - submit_update process. client_name:site-1   task_id:9f1a6f1f-6316-414b-b1d5-af0f85ba07fc
+2025-03-13 07:42:49,545 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job]: got result from client site-0 for task: name=train, id=e1a1ac94-d7f8-4897-99d2-84daa784a184
+2025-03-13 07:42:49,644 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: finished processing client result by controller
+2025-03-13 07:42:49,645 - SubmitUpdateCommand - INFO - submit_update process. client_name:site-0   task_id:e1a1ac94-d7f8-4897-99d2-84daa784a184
+2025-03-13 07:42:49,733 - WFCommServer - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: task train exit with status TaskCompletionStatus.OK
+2025-03-13 07:42:52,298 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: aggregating 2 update(s) at round 0
+2025-03-13 07:42:52,300 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: Start persist model on server.
+2025-03-13 07:42:52,304 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: End persist model on server.
+2025-03-13 07:42:52,304 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: Round 1 started.
+2025-03-13 07:42:52,304 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: Sampled clients: ['site-0', 'site-1']
+2025-03-13 07:42:52,304 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: Sending task train to ['site-0', 'site-1']
+2025-03-13 07:42:52,305 - WFCommServer - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=e1a1ac94-d7f8-4897-99d2-84daa784a184]: scheduled task train
+2025-03-13 07:42:52,563 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: assigned task to client site-1: name=train, id=17cf1a24-89e0-4286-8dff-7ca719e03947
+2025-03-13 07:42:52,564 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: sent task assignment to client. client_name:site-1 task_id:17cf1a24-89e0-4286-8dff-7ca719e03947
+2025-03-13 07:42:52,564 - GetTaskCommand - INFO - return task to client.  client_name: site-1  task_name: train   task_id: 17cf1a24-89e0-4286-8dff-7ca719e03947  sharable_header_task_id: 17cf1a24-89e0-4286-8dff-7ca719e03947
+2025-03-13 07:42:52,675 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, task_name=train, task_id=3e7a1114-8614-4490-a23f-ab31bc49fa31]: assigned task to client site-0: name=train, id=3e7a1114-8614-4490-a23f-ab31bc49fa31
+2025-03-13 07:42:52,675 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, task_name=train, task_id=3e7a1114-8614-4490-a23f-ab31bc49fa31]: sent task assignment to client. client_name:site-0 task_id:3e7a1114-8614-4490-a23f-ab31bc49fa31
+2025-03-13 07:42:52,676 - GetTaskCommand - INFO - return task to client.  client_name: site-0  task_name: train   task_id: 3e7a1114-8614-4490-a23f-ab31bc49fa31  sharable_header_task_id: 3e7a1114-8614-4490-a23f-ab31bc49fa31
+2025-03-13 07:42:53,197 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job]: got result from client site-0 for task: name=train, id=3e7a1114-8614-4490-a23f-ab31bc49fa31
+2025-03-13 07:42:53,198 - IntimeModelSelector - WARNING - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=3e7a1114-8614-4490-a23f-ab31bc49fa31]: validation metric not existing in site-0
+2025-03-13 07:42:53,302 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=3e7a1114-8614-4490-a23f-ab31bc49fa31]: finished processing client result by controller
+2025-03-13 07:42:53,302 - SubmitUpdateCommand - INFO - submit_update process. client_name:site-0   task_id:3e7a1114-8614-4490-a23f-ab31bc49fa31
+2025-03-13 07:42:53,587 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job]: got result from client site-1 for task: name=train, id=17cf1a24-89e0-4286-8dff-7ca719e03947
+2025-03-13 07:42:53,589 - IntimeModelSelector - WARNING - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: validation metric not existing in site-1
+2025-03-13 07:42:53,692 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: finished processing client result by controller
+2025-03-13 07:42:53,692 - SubmitUpdateCommand - INFO - submit_update process. client_name:site-1   task_id:17cf1a24-89e0-4286-8dff-7ca719e03947
+2025-03-13 07:42:53,743 - WFCommServer - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: task train exit with status TaskCompletionStatus.OK
+2025-03-13 07:42:55,914 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: aggregating 2 update(s) at round 1
+2025-03-13 07:42:55,915 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: Start persist model on server.
+2025-03-13 07:42:55,919 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: End persist model on server.
+2025-03-13 07:42:55,919 - nt_FedAvg_Pack - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job, peer_rc=OK, task_name=train, task_id=17cf1a24-89e0-4286-8dff-7ca719e03947]: Finished FedAvg.
+2025-03-13 07:42:55,919 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Workflow: controller finalizing ...
+2025-03-13 07:42:55,920 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: ABOUT_TO_END_RUN fired
+2025-03-13 07:42:55,922 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Firing CHECK_END_RUN_READINESS ...
+2025-03-13 07:42:56,209 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-1, peer_run=simulate_job]: server runner is finalizing - asked client to end the run
+2025-03-13 07:42:56,209 - GetTaskCommand - INFO - return task to client.  client_name: site-1  task_name: __end_run__   task_id:   sharable_header_task_id: 
+2025-03-13 07:42:56,330 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller, peer=site-0, peer_run=simulate_job]: server runner is finalizing - asked client to end the run
+2025-03-13 07:42:56,330 - GetTaskCommand - INFO - return task to client.  client_name: site-0  task_name: __end_run__   task_id:   sharable_header_task_id: 
+2025-03-13 07:42:56,668 - nvflare.fuel.f3.sfm.conn_manager - INFO - Connection [CN00006 Not Connected] is closed PID: 118
+2025-03-13 07:42:56,670 - FederatedClient - INFO - Shutting down client run: site-0
+2025-03-13 07:42:56,670 - FederatedClient - INFO - Shutting down client run: site-1
+2025-03-13 07:42:56,671 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: asked to abort - triggered abort_signal to stop the RUN
+2025-03-13 07:42:56,673 - nvflare.fuel.f3.sfm.conn_manager - INFO - Connection [CN00005 Not Connected] is closed PID: 118
+2025-03-13 07:42:57,930 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: END_RUN fired
+2025-03-13 07:42:57,930 - ReliableMessage - INFO - ReliableMessage is shutdown
+2025-03-13 07:42:57,930 - ServerRunner - INFO - [identity=simulator_server, run=simulate_job, wf=controller]: Server runner finished.
+2025-03-13 07:42:58,655 - SimulatorServer - INFO - Server app stopped.
+
+
+2025-03-13 07:42:58,698 - nvflare.fuel.hci.server.hci - INFO - Admin Server localhost on Port 33321 shutdown!
+2025-03-13 07:42:58,698 - SimulatorServer - INFO - shutting down server
+2025-03-13 07:42:58,698 - SimulatorServer - INFO - canceling sync locks
+2025-03-13 07:42:58,699 - SimulatorServer - INFO - server off
+2025-03-13 07:42:59,099 - ReliableMessage - INFO - shutdown reliable message monitor
+2025-03-13 07:43:02,704 - MPM - INFO - MPM: Good Bye!

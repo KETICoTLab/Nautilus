@@ -7,6 +7,7 @@ import docker
 from minio import Minio
 from io import BytesIO
 from tqdm import tqdm
+import requests
 from requests.exceptions import ReadTimeout
 
 def read_json_file(file_name: str) -> Any:
@@ -21,7 +22,7 @@ def read_json_file(file_name: str) -> Any:
     
 def write_config_to_json(data: Any, file_name: str) -> None:
     """JSON 데이터를 받아서 지정된 파일명으로 저장하는 함수"""
-    config_path = os.path.join(os.path.dirname(__file__), "../../../workspace/configs", f"{file_name}_config.json")
+    config_path = os.path.join(os.path.dirname(__file__), "../../workspace/configs", f"{file_name}_config.json")
     try:
         os.makedirs(os.path.dirname(config_path), exist_ok=True)  # 디렉토리 자동 생성
         with open(config_path, 'w', encoding='utf-8') as f:
@@ -57,9 +58,9 @@ def generate_project_yaml(project_id):
             "client_train_file_location":"/workspace/pt/src/cifar10_fl.py"
         }
     """    
-    config_path = os.path.join(os.path.dirname(__file__), "../../../workspace/configs/"+ project_id +"_config.json")
-    origin_yaml_path = os.path.join(os.path.dirname(__file__), "../../../workspace/provisioning/origin-project.yml")
-    output_yaml_path = os.path.join(os.path.dirname(__file__), "../../../workspace/provisioning/project.yml")
+    config_path = os.path.join(os.path.dirname(__file__), "../../workspace/configs/"+ project_id +"_config.json")
+    origin_yaml_path = os.path.join(os.path.dirname(__file__), "../../workspace/provision/origin-project.yml")
+    output_yaml_path = os.path.join(os.path.dirname(__file__), "../../workspace/provision/project.yml")
     
     config = read_json_file(config_path)
     origin_yaml = read_yaml_file(origin_yaml_path)
@@ -99,7 +100,7 @@ def run_shell_script():
     """
     try:
         # utils.py가 위치한 디렉토리 기준으로 상대경로 설정
-        script_path = os.path.join(os.path.dirname(__file__), "../../../workspace/scripts/provision_img_deploy.sh")
+        script_path = os.path.join(os.path.dirname(__file__), "../../workspace/scripts/provision_img_deploy.sh")
         subprocess.run(["bash", script_path], check=True)
         print(f"{script_path} 실행 완료")
     except subprocess.CalledProcessError as e:
@@ -225,3 +226,22 @@ def upload_to_minio(minio_client: Minio, bucket_name: str, object_name: str, fil
         minio_client.fput_object(bucket_name, object_name, file_path)
     
     print(f"File uploaded successfully: {object_name}")
+
+
+def http_post(url, payload):
+    """
+    결과 데이터를 지정된 URL로 POST 요청을 보냄.
+
+    :param url: 데이터를 보낼 엔드포인트
+    :param payload: 전송할 데이터 (dict)
+    :return: 서버 응답 (Response 객체)
+    """
+    headers = {"Content-Type": "application/json"}
+    
+    try:
+        response = requests.post(url, data=json.dumps(payload), headers=headers)
+        response.raise_for_status()  # 오류 발생 시 예외 처리
+        return response.json()  # JSON 응답 반환
+    except requests.exceptions.RequestException as e:
+        print(f"POST 요청 실패: {e}")
+        return None

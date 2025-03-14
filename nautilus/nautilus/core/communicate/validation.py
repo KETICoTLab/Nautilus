@@ -14,7 +14,7 @@ import subprocess
 
 
 def run_ansible_playbook(playbook_path, target_host):
-  command = ["bash", "./join_worker_node.sh", target_host]
+  command = ["bash", "../workspace/scripts/join_worker_node.sh", target_host]
   process = subprocess.run(command, capture_output=True, text=True)
 
   print("Playbook STDOUT:", process.stdout)
@@ -22,7 +22,7 @@ def run_ansible_playbook(playbook_path, target_host):
 
 ### playbook생성. 선택한 data에 맞는 client의 host를 조회하여 반복문으로 함수 실행 
 def load_nautilus_image(target_host):
-  playbook_path = "./load_nautilus_img.yml"
+  playbook_path = "../workspace/ansible_project/playbook/load_client_join.yml"
   run_ansible_playbook(playbook_path, target_host)
 
 

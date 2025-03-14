@@ -1,0 +1,226 @@
+---
+- name: Install and Configure Kubernetes Cluster with PostgreSQL and MinIO
+  hosts: "localhost"
+  become: yes
+  vars:
+    kube_version: "1.32.2"
+    cni_plugin: "calico"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+  tasks:
+  - name: Remove old Kubernetes configurations
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+      - /etc/kubernetes
+      - /var/lib/etcd
+      - /var/lib/kubelet
+
+  - name: Update system packages
+    apt:
+      update_cache: yes
+      upgrade: dist
+
+  - name: Install required dependencies
+    apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gpg
+      state: present
+
+  - name: Install Docker Compose
+    apt:
+      name: docker-compose
+      state: present
+
+  - name: Deploy MinIO using Docker
+    command: >
+      docker run -d --name minio --restart always
+      -p 9000:9000 -p 9001:9001
+      -e MINIO_ACCESS_KEY=minio
+      -e MINIO_SECRET_KEY=minio123
+      -e TZ=Asia/Seoul
+      -e LANG=ko_KR.utf8
+      minio/minio server --console-address ":9001" /storage
+
+  - name: Wait for MinIO to be ready
+    wait_for:
+      host: 127.0.0.1
+      port: 9000
+      delay: 5
+      timeout: 60
+
+  - name: Install MinIO client (mc)
+    get_url:
+      url: https://dl.min.io/client/mc/release/linux-amd64/mc
+      dest: /usr/local/bin/mc
+      mode: '0755'
+
+  - name: Configure MinIO client alias
+    command: /usr/local/bin/mc alias set myminio http://127.0.0.1:9000 minio minio123
+
+  - name: Ensure MinIO bucket for images exists
+    command: /usr/local/bin/mc mb myminio/images || true
+
+  - name: Set public access policy for the bucket
+    command: /usr/local/bin/mc anonymous set public myminio/images
+
+  - name : Get Absolute path of image file
+    set_fact:
+      image_path: "{{ (playbook_dir + '/../images/nautilus-pv-updated.tar') | realpath }}"
+      
+  - name: Upload image to MinIO
+    command: "/usr/local/bin/mc cp {{ image_path }} myminio/images/"
+
+  - name: Add Docker GPG key
+    get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/keyrings/docker.asc
+      mode: '0644'
+
+  - name: Ensure /etc/apt/keyrings directory exists
+    file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: '0755'
+
+  - name: Add Docker repository
+    shell: |
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    args:
+      creates: /etc/apt/sources.list.d/docker.list
+
+
+  - name: Add Kubernetes GPG key
+    get_url:
+      url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+      dest: /tmp/Release.key
+
+  - name: Convert Kubernetes GPG key to keyring format
+    command: gpg --dearmor --batch --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/Release.key
+
+  - name: Add Kubernetes apt repository
+    copy:
+      dest: /etc/apt/sources.list.d/kubernetes.list
+      content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /'
+
+  - name: Update apt cache after adding repositories
+    apt:
+      update_cache: yes
+
+  - name: Install Docker, containerd, and Kubernetes components
+    apt:
+      name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - kubelet
+        - kubeadm
+        - kubectl
+      state: present
+      update_cache: yes
+
+  - name: Hold Kubernetes packages at current version
+    shell: apt-mark hold kubelet kubeadm kubectl
+
+  - name: Enable and start kubelet and containerd services
+    systemd:
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    loop:
+      - containerd
+      - kubelet
+
+  - name: Configure containerd (SystemdCgroup)
+    block:
+      - name: Generate default containerd configuration
+        command: containerd config default
+        register: containerd_config
+
+      - name: Write the containerd configuration to file
+        copy:
+          content: "{{ containerd_config.stdout }}"
+          dest: /etc/containerd/config.toml
+
+      - name: Enable SystemdCgroup in containerd configuration
+        replace:
+          path: /etc/containerd/config.toml
+          regexp: '^\s*SystemdCgroup = false$'
+          replace: 'SystemdCgroup = true'
+
+      - name: Restart containerd service
+        systemd:
+          name: "{{ item }}"
+          state: restarted
+          enabled: yes
+        loop:
+          - docker
+          - kubelet
+          - containerd
+
+  - name: Disable swap
+    command: swapoff -a
+
+  - name: Ensure swap is disabled in fstab
+    replace:
+      path: /etc/fstab
+      regexp: '^.*swap.*$'
+      replace: ''
+
+  - name: Configure sysctl settings for Kubernetes networking
+    copy:
+      dest: /etc/sysctl.d/k8s.conf
+      content: |
+        net.bridge.bridge-nf-call-iptables = 1
+        net.ipv4.ip_forward = 1
+    notify: Reload sysctl
+
+  - name: Apply sysctl settings
+    command: sysctl --system
+
+  - name: Pre-pull Kubernetes images
+    command: kubeadm config images pull
+
+  - name: Initialize Kubernetes cluster
+    command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
+    register: kubeadm_init_output
+
+  - name: Configure kubectl for root user
+    shell: |
+      mkdir -p $HOME/.kube
+      cp /etc/kubernetes/admin.conf $HOME/.kube/config
+      chown $(id -u):$(id -g) $HOME/.kube/config
+
+  - name: Deploy network plugin (Calico)
+    shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+  - name: Retrieve join command for worker nodes
+    shell: kubeadm token create --print-join-command
+    register: join_command
+
+  - name: Save join command
+    copy:
+      content: "{{ join_command.stdout }}"
+      dest: ./kubeadm-join.sh
+      mode: "0755"
+
+  - name: Show join command for worker nodes
+    debug:
+      msg: "{{ join_command.stdout }}"
+
+  - name: Verify cluster status
+    shell: kubectl get nodes
+    register: cluster_nodes
+    changed_when: false
+
+  - name: Display cluster nodes
+    debug:
+      msg: "{{ cluster_nodes.stdout_lines }}"
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system
