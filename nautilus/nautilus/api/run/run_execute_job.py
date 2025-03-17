@@ -15,11 +15,12 @@ from nautilus.core.communicate.validation import (
 def main(project_id, job_id):
     namespace = "nautilus-pv-updated"
     pod_name = f"{project_id}-server"
+    job_id = "hello-pt_cifar10_fedavg"
     
     # 실행할 명령어 정의
-    admin_startup_command = f"/workspace/nautilus/workspace/provisioning/{project_id}/prod_00/admin@nvidia.com/startup/start.sh"
+    admin_startup_command = f"/workspace/nautilus/nautilus/workspace/provisioning/{project_id}/prod_00/admin@nvidia.com/startup/start.sh"
     user_name_command = "admin@nvidia.com"
-    submit_job_command = f"/workspace/nautilus/workspace/jobs/{job_id}"
+    submit_job_command = f"/workspace/nautilus/nautilus/workspace/jobs/{job_id}"
 
     print(f"Starting job execution on server: {pod_name}")
 

@@ -1,6 +1,6 @@
-from k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container
-from containerd import is_image_exists, remove_containerd_image, load_containerd_image
-from minio_storage import pull_pv_image_tar_from_minio
+from nautilus.core.communicate.k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container
+from nautilus.core.communicate.containerd import is_image_exists, remove_containerd_image, load_containerd_image
+from nautilus.core.communicate.minio_storage import pull_pv_image_tar_from_minio
 import os
 import subprocess
 
@@ -11,10 +11,18 @@ import subprocess
     #  - nvflare namespace 에 client deployment 실행
     # 2. train.py 파일 컨테이너로 복사
     # 3. simulation exec 명령어 날리기
+def run_join_playbook(target_host):
+  print(f"run_join_playbook) target host: {target_host}")
+  script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/scripts/join_worker_node.sh"))
 
+  command = ["bash", script_path, target_host]
+  process = subprocess.run(command, capture_output=True, text=True)
+
+  print("Playbook STDOUT:", process.stdout)
+  print("Playbook STDERR:", process.stderr)
 
 def run_ansible_playbook(playbook_path, target_host):
-  command = ["bash", "../workspace/scripts/join_worker_node.sh", target_host]
+  command = ["bash", playbook_path, target_host]
   process = subprocess.run(command, capture_output=True, text=True)
 
   print("Playbook STDOUT:", process.stdout)
@@ -22,7 +30,8 @@ def run_ansible_playbook(playbook_path, target_host):
 
 ### playbook생성. 선택한 data에 맞는 client의 host를 조회하여 반복문으로 함수 실행 
 def load_nautilus_image(target_host):
-  playbook_path = "../workspace/ansible_project/playbook/load_client_join.yml"
+  playbook_path = "../workspace/ansible_project/playbook/load_nautilus_img.yml"
+  print("playbook_path")
   run_ansible_playbook(playbook_path, target_host)
 
 
@@ -50,4 +59,4 @@ def execute_command(pod_name: str, command: str, namespace: str = "nautilus"):
   print(f"execute_command: namespace: {namespace}, pod_name: {pod_name}, command: {command}")
   connect_get_namespaced_pod_exec(namespace, pod_name, command)
      
-run_ansible_playbook()
+#run_ansible_playbook()

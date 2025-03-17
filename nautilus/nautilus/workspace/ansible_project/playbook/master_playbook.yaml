@@ -205,7 +205,7 @@
   - name: Save join command
     copy:
       content: "{{ join_command.stdout }}"
-      dest: ./kubeadm-join.sh
+      dest: ../../scripts/kubeadm-join.sh
       mode: "0755"
 
   - name: Show join command for worker nodes

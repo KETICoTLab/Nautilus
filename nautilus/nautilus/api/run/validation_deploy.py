@@ -49,8 +49,7 @@ def main(config_name):
         container_path = "/workspace/nautilus/nautilus/simulation/src"
         
         namespace = "nautilus-pv-updated"
-        command = f'python3 /workspace/nautilus/nautilus/simulation/fedavg_script_runner_pt.py --host "{HOST}" --project_id "{project_id}" --client_id "{client_list[i]}"'
-
+        #command = f'python3 /workspace/nautilus/nautilus/simulation/fedavg_script_runner_pt.py --host "{HOST}" --project_id "{project_id}" --client_id "{client_list[i]}"'
         print(f"Deploying Site-{site} | Host: {target_host} | Node: {node_name} | Pod: {pod_name}")
 
         # 1. Nautilus Docker 이미지 로드
@@ -62,8 +61,18 @@ def main(config_name):
         # 3. Train 파일 컨테이너에 복사
         copy_local_to_container(pod_name=pod_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
 
-        # 4. simulation 실행
-        execute_command(pod_name=pod_name, command=command, namespace=namespace)
+        ### client start-up 모드 진입
+        # 실행할 명령어 정의
+        client_startup_command = f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/start.sh"
+        # client Start-up 실행
+        print(f"- Executing (client_startup_command): {client_startup_command}")
+        execute_command(pod_name=pod_name, command=client_startup_command, namespace=namespace)
+        ######
+        
+    # 4. simulation 실행 - pass?
+    server_pod_name = f"{project_id}-server"
+    command = "python3 /workspace/nautilus/nautilus/api/contrib/simulation_run.py"
+    execute_command(pod_name=server_pod_name, command=command, namespace=namespace)
 
     print("All deployments completed successfully!")
 

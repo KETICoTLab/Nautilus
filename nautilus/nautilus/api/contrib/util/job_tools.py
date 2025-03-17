@@ -49,13 +49,16 @@ from nvflare.security.logging import secure_format_exception
 import torchvision
 import torch
 import torchvision.transforms as transforms
-
+import json
 from nvflare.app_opt.pt.job_config.base_fed_job import BaseFedJob
 import sys
-from pathlib import Path 
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from util.auto_save.utils import http_post
+from pathlib import Path
 
+# 최상위 Nautilus 디렉토리를 sys.path에 추가
+sys.path.append(str(Path(__file__).resolve().parent))
+
+# http_post 함수 import
+from api_utils import http_post
 
 class nt_model_controller(Controller, FLComponentWrapper, ABC):
     def __init__(
@@ -544,9 +547,14 @@ from client_contribution.loo import nt_contrib_loo
 
 class nt_FedAvg_Pack(nt_FedAvg):
 
-    def __init__(self, server_url):
-        super().__init__()
-        self.server_url = "http://localhost:8000/nautilus/v1/result"  # 데이터를 전송할 서버 URL
+    def __init__(self, num_clients: int, client_lists: list, num_rounds: int, initial_model: nn.Module, server_url: str):
+        super().__init__(
+            num_clients=num_clients,
+            client_lists=client_lists,
+            num_rounds=num_rounds,
+            initial_model=initial_model
+        )
+        self.server_url = server_url  # 데이터를 전송할 서버 URL
         
     def run(self) -> None:
         self.info("Start FedAvg.")
@@ -595,15 +603,17 @@ class nt_FedAvg_Pack(nt_FedAvg):
 
             # payload 생성
             payload = {
-                "round": self.current_round,
-                "results": results,
-                "aggregate_results": aggregate_results,
-                "num_clients": self.num_clients,
-                "device": DEVICE,
+                "data": {  # ✅ JSON 데이터를 감싸는 `data` 태그 추가
+                    "round": self.current_round,
+                    "results": json.dumps(results, default=str),  # 리스트를 JSON 문자열로 변환
+                    "aggregate_results": json.dumps(aggregate_results, default=str),
+                    "num_clients": self.num_clients,
+                    "device": DEVICE,
+                }
             }
-
             # 결과 및 집계된 결과를 하나의 JSON으로 묶어 서버로 POST 전송
-            response = post_results(self.server_url, payload)
+            response = http_post(self.server_url, payload)
+            
             if response:
                 self.info(f"Results 및 Aggregate Results 전송 성공: {response}")
             else:
@@ -724,5 +734,12 @@ class nt_Job_controller(BaseFedJob):
 
         super().__init__(initial_model, name, min_clients, mandatory_clients, key_metric)
         if FL_method == "FedAvg":
-            controller = nt_FedAvg_Pack(num_clients=n_clients, client_lists = client_lists, num_rounds=num_rounds,persistor_id=self.comp_ids["persistor_id"],initial_model=initial_model)
+            #controller = nt_FedAvg_Pack(num_clients=n_clients, client_lists = client_lists, num_rounds=num_rounds,persistor_id=self.comp_ids["persistor_id"],initial_model=initial_model)
+            controller = nt_FedAvg_Pack(
+                num_clients=n_clients,
+                client_lists=client_lists,
+                num_rounds=num_rounds,
+                initial_model=initial_model,
+                server_url="http://localhost:8000/nautilus/v1/result"
+            )
         self.to_server(controller)

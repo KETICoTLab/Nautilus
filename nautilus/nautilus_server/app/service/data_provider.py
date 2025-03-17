@@ -7,6 +7,12 @@ import os
 import subprocess
 from pathlib import Path
 
+import sys
+
+# `nautilus` 디렉토리를 Python 경로에 추가
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from nautilus.core.communicate.validation import run_join_playbook  
+
 ANSIBLE_VAULT_PASS_PATH = "../nautilus/workspace/ansible_project/inventory/host_vars/vaultpass"
 ANSIBLE_HOST_VARS_DIR = "../nautilus/workspace/ansible_project/inventory/host_vars"
 
@@ -61,6 +67,9 @@ ansible_ssh_password: "{password}"
         ["ansible-vault", "encrypt", "--vault-password-file", str(vault_password_path), str(host_vars_path)],
         check=True
     )
+    
+    run_join_playbook(ip_address)
+    
     
 async def get_data_provider(data_provider_id: str) -> Optional[DataProvider]:
     query = "SELECT * FROM data_providers WHERE data_provider_id = $1;"

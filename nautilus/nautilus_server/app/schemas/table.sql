@@ -87,3 +87,9 @@ CREATE TABLE jobs (
     num_local_epoch INTEGER,  -- 로컬 에폭 횟수 (선택 사항)
     job_config JSON  -- 작업 설정
 );
+
+CREATE TABLE results (
+    result_id TEXT,
+    data JSONB,
+    creation_time timestamp with time zone -- 생성 시간
+);

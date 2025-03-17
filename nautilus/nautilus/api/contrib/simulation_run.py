@@ -15,8 +15,7 @@ EXPORT_PATH = BASE_DIR / "../../workspace/jobs"
 if __name__ == "__main__":
     n_clients = 2
     num_rounds = 2
-    #train_script = "client_contribution/src/hello-pt_cifar10_fl.py"
-    train_script = str(Path(__file__).resolve().parent / "client_contribution/src/hello-pt_cifar10_fl.py")
+    train_script = "client_contribution/src/hello-pt_cifar10_fl.py"
 
     # Client Selection Function is Now here
     
@@ -32,6 +31,4 @@ if __name__ == "__main__":
         job.to(executor, f"site-{i}")
 
     print(f"export_job > str(EXPORT_PATH.resolve()): {str(EXPORT_PATH.resolve())}")
-    job.export_job(str(EXPORT_PATH.resolve()))
-    #job.simulator_run(str(EXPORT_PATH.resolve()))
-    #job.simulator_run("./test", gpu="0")
+    job.simulator_run(str(EXPORT_PATH.resolve()))

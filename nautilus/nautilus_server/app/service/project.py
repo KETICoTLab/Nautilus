@@ -18,7 +18,7 @@ async def create_project(data: ProjectCreate, pool):
     row = await fetch_one(pool, query, project_id, data.project_name, data.description, data.tags, data.creator_id, data.data_provider_ids, data.number_of_clients, data.number_of_jobs, data.number_of_subscriptions, data.project_image)
     
     # provision.py 실행 (비동기 실행)
-    provision_script = "../provision.py"  # nautilus/ 디렉토리에 위치
+    provision_script = "../nautilus/api/run/provision.py"  # nautilus/ 디렉토리에 위치
     provision_command = [
         "python", provision_script,
         "--project_id", project_id,
@@ -86,7 +86,7 @@ async def list_projects() -> List[Project]:
 
 async def validation_check(project_id: str):
     # provision.py 실행 (비동기 실행)
-    provision_script = "../validation_deploy.py"  # nautilus/ 디렉토리에 위치
+    provision_script = "../nautilus/api/run/validation_deploy.py"  # nautilus/ 디렉토리에 위치
     config_name = f"{project_id}_config.json"
     validation_check_command = [
         "python", provision_script,

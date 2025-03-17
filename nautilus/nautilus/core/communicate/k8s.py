@@ -29,6 +29,7 @@ import subprocess
 
 
 # Kubernetes 클러스터 설정 로드
+'''
 try:
     config.load_kube_config()  # 로컬 K8s 클러스터 (kubectl 사용 가능 시)
 except config.ConfigException:
@@ -39,7 +40,7 @@ v1 = client.CoreV1Api()
 apps_v1 = client.AppsV1Api()
 batch_v1 = client.BatchV1Api()
 storage_v1 = client.StorageV1Api()
-
+'''
 # --- Kubernetes 리소스 조회 함수들 --- #
 
 def list_daemon_set_for_all_namespace():

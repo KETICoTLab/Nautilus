@@ -17,7 +17,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     # create_job.py 실행 
     create_job_script = "../nautilus/api/run/run_create_job.py"  # nautilus/ 디렉토리에 위치 
     create_job_command = [
-        "python", create_job_script,
+        "python3", create_job_script,
         "--config_path", f"{project_id}_config.json",
         "--job_id", job_id,
         "--aggr_function", data.aggr_function,
@@ -29,7 +29,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     # export_job.py 실행 (simulation version)
     create_job_script = Path("../nautilus/api/contrib/export_job.py").resolve()  # nautilus/ 디렉토리에 위치 
     create_job_command = [
-        "python", str(create_job_script)
+        "python3", str(create_job_script)
     ]  
     print(create_job_command)
 
@@ -88,13 +88,13 @@ async def exec_job(project_id: str, job_id: str):
     execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
     '''
     execute_job_command = [
-        "python", str(execute_job_script),
+        "python3", str(execute_job_script),
         "--project_id", project_id,
         "--job_id", job_id
     ]
     '''
     execute_job_command = [
-        "python", str(execute_job_script),
+        "python3", str(execute_job_script),
         "--project_id", project_id,
         "--job_id", "hello-pt_cifar10_fedavg"
     ]

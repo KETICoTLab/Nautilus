@@ -13,3 +13,4 @@ from app.schemas.client import ClientCreate, ClientResponse, CheckStatusUpdate
 from app.schemas.global_model import GlobalModel, GlobalModelCreate
 from app.schemas.train_code import TrainCode, TrainCodeCreate
 from app.schemas.service import Service, ServiceCreate
+from app.schemas.result import Result, ResultCreate
