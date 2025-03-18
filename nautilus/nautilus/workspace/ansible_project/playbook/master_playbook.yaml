@@ -110,7 +110,7 @@
 
   - name : Get Absolute path of image file
     set_fact:
-      image_path: "{{ (playbook_dir + '/../../images/nautilus-pv-updated.tar') | realpath }}"
+      image_path: "{{ (playbook_dir + '/../../images/nautilus-default-img.tar') | realpath }}"
       
   - name: Print image_path for debugging
     debug:
