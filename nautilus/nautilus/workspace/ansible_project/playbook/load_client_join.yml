@@ -4,13 +4,10 @@
   become: yes  # Run tasks as root
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    minio_server_url: "10.252.72.172"
-    minio_server_id: "minio"
-    minio_server_pw: "minio123"
-    minio_bucket_path: "myminio/images/nautilus-pv-updated.tar"
-    local_tar_path: "/tmp/nautilus-pv-updated.tar"
-    containerd_image_name: "nautilus-pv-updated:latest"
-    kube_join_command: "kubeadm join 10.252.72.172:6443 --token 70j2mg.emuvzlscqluj6zyd --discovery-token-ca-cert-hash sha256:c562ece7d77e23aeb4a2db0f98cdf45d8b99e49d1c23b635a67eb4c443565328"
+    minio_server_url: ""
+    minio_server_id: ""
+    minio_server_pw: ""
+    kube_join_command: ""
 
   handlers:
     - name: Reload sysctl

@@ -43,6 +43,7 @@ def deploy():
     MINIO_ENDPOINT = "http://localhost:9000"
     MINIO_BUCKET = "images"
     IMAGE_NAME = "nautilus-default-img.tar"
+    TAR_IMAGE_NAME = "nautilus-vlight:0.2"
 
     # 현재 provision.py의 위치를 기준으로 Nautilus/nautilus/nautilus/workspace/images/ 설정
     LOCAL_WORKSPACE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/images/"))
@@ -61,7 +62,7 @@ def deploy():
     
     docker_client = docker.from_env()
     load_docker_image(docker_client, image_path)
-    image_id = get_docker_image_id(docker_client, "nautilus-default-img:latest")
+    image_id = get_docker_image_id(docker_client, TAR_IMAGE_NAME)
     container = run_docker_container(docker_client, CONTAINER_NAME, image_id)
     
     # 프로젝트 YML 파일 복사 경로 수정
