@@ -1,4 +1,4 @@
-from nautilus.core.communicate.k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container
+from nautilus.core.communicate.k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container, connect_get_namespaced_pod_exec
 from nautilus.core.communicate.containerd import is_image_exists, remove_containerd_image, load_containerd_image
 from nautilus.core.communicate.minio_storage import pull_pv_image_tar_from_minio
 import os

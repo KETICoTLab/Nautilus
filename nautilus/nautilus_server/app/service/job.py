@@ -4,6 +4,7 @@ from app.database import pool
 from app.service.base import fetch_one, fetch_all, execute
 import subprocess
 from pathlib import Path
+import asyncio
 
 async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     job_id = "J-KR-" + data.job_name
@@ -14,7 +15,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     """
     
     '''
-    # create_job.py 실행 
+    # run_create_job.py 실행 
     create_job_script = "../nautilus/api/run/run_create_job.py"  # nautilus/ 디렉토리에 위치 
     create_job_command = [
         "python3", create_job_script,
@@ -26,36 +27,71 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     ]
     '''
     
-    # export_job.py 실행 (simulation version)
-    create_job_script = Path("../nautilus/api/contrib/export_job.py").resolve()  # nautilus/ 디렉토리에 위치 
-    create_job_command = [
-        "python3", str(create_job_script)
-    ]  
-    print(create_job_command)
+    # ✅ export_job.py 실행 (simulation version)
+    create_job_script = Path("../nautilus/api/contrib/export_job.py").resolve()  # 절대 경로 변환
+    create_job_command = ["python3", str(create_job_script)]
+    
+    # ✅ run_deploy_job.py 실행 
+    deploy_job_script = Path("../nautilus/api/run/run_deploy_job.py").resolve()  # 절대 경로 변환
+    deploy_job_command = [
+        "python3", str(deploy_job_script),
+        "--config_path", f"{project_id}_config.json",
+        "--job_id", job_id
+    ]
+
+    print(f"🟢 Running create_job_script: {create_job_command}")
 
     try:
-        process = subprocess.Popen(
-            create_job_command,
+        # 🔹 Step 1: create_job 실행
+        create_process = await asyncio.create_subprocess_exec(
+            *create_job_command,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            stderr=subprocess.PIPE
         )
 
-        # 표준 출력 및 오류 로그 실시간 출력
-        for line in process.stdout:
-            print(f"[create_job.py LOG]: {line.strip()}")
+        stdout, stderr = await create_process.communicate()
 
-        for line in process.stderr:
-            print(f"[create_job.py ERROR]: {line.strip()}")
+        print(f"[create_job.py LOG]: {stdout.decode().strip()}")
+        print(f"[create_job.py ERROR]: {stderr.decode().strip()}")
 
-        process.wait()
-        print(f"* create_job.py finished with exit code {process.returncode}")
+        if create_process.returncode != 0:
+            print(f"❌ create_job.py failed with exit code {create_process.returncode}")
+            return None  # 실패 시 중단
+
+        print(f"✅ create_job.py finished successfully.")
+
+        # 🔹 Step 2: deploy_job 실행 (create_job 성공 후 실행)
+        print(f"🟢 Running deploy_job_script: {deploy_job_command}")
+        deploy_process = await asyncio.create_subprocess_exec(
+            *deploy_job_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        stdout, stderr = await deploy_process.communicate()
+
+        print(f"[deploy_job.py LOG]: {stdout.decode().strip()}")
+        print(f"[deploy_job.py ERROR]: {stderr.decode().strip()}")
+
+        if deploy_process.returncode != 0:
+            print(f"❌ deploy_job.py failed with exit code {deploy_process.returncode}")
+            return None  # 실패 시 중단
+
+        print(f"✅ deploy_job.py finished successfully.")
 
     except Exception as e:
-        print(f"* create_job failed: {e}")
-        
-    row = await fetch_one(pool, query, project_id, job_id, data.job_name, data.description, data.tags, data.creator_id, data.job_status, data.client_status, data.aggr_function, data.admin_info, data.data_id, data.global_model_id, data.contri_est_method, data.num_global_iteration, data.num_local_epoch, data.job_config)
+        print(f"❌ create_job failed: {e}")
+        return None  # 실패 시 중단
+
+    # 🔹 Step 3: DB에 Job 정보 저장
+    row = await fetch_one(
+        pool, query, project_id, job_id, data.job_name, data.description, data.tags, data.creator_id,
+        data.job_status, data.client_status, data.aggr_function, data.admin_info, data.data_id,
+        data.global_model_id, data.contri_est_method, data.num_global_iteration, data.num_local_epoch, data.job_config
+    )
+    
     return Job(**row)
+
 
 async def get_job(project_id: str, job_id: str) -> Optional[Job]:
     query = "SELECT * FROM jobs WHERE job_id = $1;"
