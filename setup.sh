@@ -7,7 +7,7 @@ set -e
 TARGET_HOST="localhost"
 PASSWARD="keti123"  # sudo 비밀번호 설정
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLAYBOOK_PATH="$SCRIPT_DIR/nautilus/nautilus/worspace/ansible_project/playbook/master_playbook.yaml"
+PLAYBOOK_PATH="$SCRIPT_DIR/nautilus/nautilus/workspace/ansible_project/playbook/master_playbook.yaml"
 REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
 # 📌 Ansible이 설치되어 있는지 확인

@@ -6,8 +6,16 @@
     kube_version: "1.32.2"
     cni_plugin: "calico"
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    db_name: "nautilus_db"
+    db_user: "postgres"
+    db_password: "keti123"
+    sql_table_file_path: "{{ (playbook_dir + '/../../../../nautilus_server/app/schemas/table.sql') | realpath }}"
 
   tasks:
+  - name: Print script_dir for debugging
+    debug:
+      msg: "script_dir is set to: {{ sql_table_file_path }}"
+
   - name: Remove old Kubernetes configurations
     file:
       path: "{{ item }}"
@@ -35,6 +43,38 @@
     apt:
       name: docker-compose
       state: present
+
+  - name: Deploy PostgreSQL using Docker
+    command: >
+      docker run -d --name postgres_container --restart always 
+      -e POSTGRES_DB={{ db_name }} 
+      -e POSTGRES_USER={{ db_user }} 
+      -e POSTGRES_PASSWORD={{ db_password }} 
+      -p 5432:5432 
+      -v /var/lib/postgresql/data:/var/lib/postgresql/data 
+      postgres:latest
+
+  - name: Wait for PostgreSQL to be ready
+    wait_for:
+      host: 127.0.0.1
+      port: 5432
+      delay: 5
+      timeout: 60
+
+  - name: Create tables from SQL script
+    shell: |
+      docker exec -i postgres_container psql -U {{ db_user }} -d {{ db_name }} < {{ sql_table_file_path }}
+
+  - name: Verify tables in the database
+    shell: |
+      docker exec -i postgres_container psql -U {{ db_user }} -d {{ db_name }} -c "\dt"
+    register: db_tables
+    changed_when: false
+
+  - name: Display tables in database
+    debug:
+      msg: "{{ db_tables.stdout_lines }}"
+
 
   - name: Deploy MinIO using Docker
     command: >
@@ -70,8 +110,12 @@
 
   - name : Get Absolute path of image file
     set_fact:
-      image_path: "{{ (playbook_dir + '/../images/nautilus-pv-updated.tar') | realpath }}"
+      image_path: "{{ (playbook_dir + '/../../images/nautilus-pv-updated.tar') | realpath }}"
       
+  - name: Print image_path for debugging
+    debug:
+      msg: "image_path is set to: {{ image_path }}"      
+
   - name: Upload image to MinIO
     command: "/usr/local/bin/mc cp {{ image_path }} myminio/images/"
 
