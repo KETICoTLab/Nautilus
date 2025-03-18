@@ -202,9 +202,9 @@
           state: restarted
           enabled: yes
         loop:
+          - containerd
           - docker
           - kubelet
-          - containerd
 
   - name: Disable swap
     command: swapoff -a
