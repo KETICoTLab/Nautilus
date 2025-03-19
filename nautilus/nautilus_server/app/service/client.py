@@ -5,8 +5,8 @@ from app.service.base import fetch_one, fetch_all, execute
 import json
 import os
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")) #Nautilus/nautilus
+print(f"service/client.py) BASE_DIR resolved to: {BASE_DIR}")
 async def create_client(project_id: str, client_data: ClientCreate, pool):
     client_id = "C-KR-" + client_data.client_name
         
@@ -30,8 +30,8 @@ async def create_client(project_id: str, client_data: ClientCreate, pool):
         raise Exception(f"No IP address found in host_information for data_id: {client_data.data_id}")
 
     # Config 파일 경로
-    config_path = os.path.join(BASE_DIR, "workspace", "configs", f"{project_id}_config.json")
-
+    config_path = os.path.join(BASE_DIR, "nautilus", "workspace", "configs", f"{project_id}_config.json")
+    print(f"[DEBUG] Absolute config_path: {config_path}")
     # 기존 `config.json` 파일 로드
     if os.path.exists(config_path):
         with open(config_path, "r") as f:

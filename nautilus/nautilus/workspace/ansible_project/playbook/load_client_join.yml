@@ -5,8 +5,8 @@
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
     minio_server_url: ""
-    minio_server_id: ""
-    minio_server_pw: ""
+    minio_server_id: "minio"
+    minio_server_pw: "minio123"
     kube_join_command: ""
 
   handlers:
@@ -90,6 +90,9 @@
         name: docker
         enabled: yes
         state: started
+
+    - name: Ensure Docker socket has correct permissions
+      command: sudo chmod 666 /var/run/docker.sock
 
     # -------------------------------
     # Install Kubernetes Components
@@ -199,6 +202,10 @@
     - name: Show MinIO Client version
       debug:
         msg: "{{ mc_version.stdout }}"
+
+    - name: Print minio info for debugging
+      debug:
+        msg: "myminio http://{{ minio_server_url }}:9000 {{ minio_server_id }} {{ minio_server_pw }}"
 
     - name: Ensure MinIO Client (mc) is configured
       command: /usr/local/bin/mc alias set myminio http://{{ minio_server_url }}:9000 {{ minio_server_id }} {{ minio_server_pw }}

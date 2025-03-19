@@ -58,6 +58,8 @@ def deploy():
     minio_client = set_minio_client()
     
     image_path = os.path.join(LOCAL_WORKSPACE, IMAGE_NAME)
+    print(f"download_from_minio) image_path: {image_path}")
+    
     download_from_minio(minio_client, MINIO_BUCKET, IMAGE_NAME, image_path)
     
     docker_client = docker.from_env()

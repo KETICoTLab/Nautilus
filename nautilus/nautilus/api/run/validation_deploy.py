@@ -44,22 +44,26 @@ def main(config_name):
     for i, target_host in enumerate(target_hosts):
         site = i + 1  # site-1, site-2, ... 순차 증가
         node_name = client_info.get(f"site-{site}", f"default-node-{site}")  # site에 매핑된 data_id
-        pod_name = f"{project_id}-site-{site}"
+        #pod_name = f"{project_id}-site-{site}"
+        pod_name = f"site-{site}"
         train_py_path = os.path.abspath(os.path.join(BASE_DIR, "../../simulation/src/hello-pt_cifar10_network.py"))
         container_path = "/workspace/nautilus/nautilus/simulation/src"
         
-        namespace = "nautilus-pv-updated"
+        namespace = "nautilus"
         #command = f'python3 /workspace/nautilus/nautilus/simulation/fedavg_script_runner_pt.py --host "{HOST}" --project_id "{project_id}" --client_id "{client_list[i]}"'
         print(f"Deploying Site-{site} | Host: {target_host} | Node: {node_name} | Pod: {pod_name}")
 
         # 1. Nautilus Docker 이미지 로드
         load_nautilus_image(target_host)
+        print(f"load_nautilus_image done..")
 
         # 2. Kubernetes 배포 실행
         apply_nautilus_deployment(project_id=project_id, site=site, node_name=node_name)
+        print(f"apply_nautilus_deployment done..")
 
         # 3. Train 파일 컨테이너에 복사
         copy_local_to_container(pod_name=pod_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
+        print(f"copy_local_to_container done..")
 
         ### client start-up 모드 진입
         # 실행할 명령어 정의
@@ -70,7 +74,8 @@ def main(config_name):
         ######
         
     # 4. simulation 실행 - pass?
-    server_pod_name = f"{project_id}-server"
+    #server_pod_name = f"{project_id}-server"
+    server_pod_name = f"server"
     command = "python3 /workspace/nautilus/nautilus/api/contrib/simulation_run.py"
     execute_command(pod_name=server_pod_name, command=command, namespace=namespace)
 

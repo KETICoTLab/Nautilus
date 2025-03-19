@@ -140,7 +140,6 @@ def custom_list_node():
         # 결과 저장
         node_list.append({
             "node_name": node_name,
-            "role": role,
             "cpu": cpu,
             "memory": memory,
             "ip": internal_ip,
@@ -237,17 +236,18 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
         api_version="apps/v1",
         kind="Deployment",
         metadata=client.V1ObjectMeta(
-            name=f"{project_id}-site-{site}",
-            labels={"role": "client"}
+            #name=f"{project_id}-site-{site}",
+            name=f"site-{site}",
+            labels={"app": namespace}  # ✅ `role` 제거
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
             selector=client.V1LabelSelector(
-                match_labels={"app": namespace, "role": "client"}
+                match_labels={"app": namespace}
             ),
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(
-                    labels={"app": namespace, "role": "client"}
+                    labels={"app": namespace}
                 ),
                 spec=client.V1PodSpec(
                     node_selector={"kubernetes.io/hostname": node_name}, 
@@ -273,7 +273,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                                 "--set", "secure_train=true", f"uid=site-{site}", 
                                 "config_folder=config", "org=nvidia"
                             ],
-                            command=["/bin/bash", "-c", f"/workspace/nautilus/workspace/provisioning/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
+                            command=["/bin/bash", "-c", f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
                         )
                     ]
                 )
@@ -293,22 +293,23 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
 
 
 def create_server_deployment(project_id: str , node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1):
-    """Deployment 생성"""
+    """Deployment 생성 (role 없이 node_name 기반으로 배포)"""
     deployment = client.V1Deployment(
         api_version="apps/v1",
         kind="Deployment",
         metadata=client.V1ObjectMeta(
-            name=f"{project_id}-server",
-            labels={"role": "server"}
+            #name=f"{project_id}-server",
+            name=f"server",
+            labels={"app": namespace}  # ✅ `role` 제거
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
             selector=client.V1LabelSelector(
-                match_labels={"app": namespace, "role": "server"}
+                match_labels={"app": namespace}
             ),
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(
-                    labels={"app": namespace, "role": "server"}
+                    labels={"app": namespace}
                 ),
                 spec=client.V1PodSpec(
                     node_selector={"kubernetes.io/hostname": node_name}, 
@@ -333,7 +334,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                                 "-m", f"/workspace/nvfl/server", "-s", "fed_client.json",
                                 "--set", "secure_train=true", "config_folder=config", "org=nvidia"
                             ],
-                            command=["/bin/bash", "-c", f"/workspace/nautilus/workspace/provisioning/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
+                            command=["/bin/bash", "-c", f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
                         )
                     ]
                 )

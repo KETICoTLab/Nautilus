@@ -107,7 +107,7 @@ def run_shell_script():
         print(f"스크립트 실행 중 오류 발생: {e}")
 
 
-def set_minio_client(endpoint="http://localhost:9000", access_key="admin", secret_key="admin123"):
+def set_minio_client(endpoint="http://localhost:9000", access_key="minio", secret_key="minio123"):
     """MinIO 클라이언트 초기화"""
     print("[INFO] MinIO 클라이언트 초기화 중...")
     return Minio(endpoint.replace("http://", ""), access_key=access_key, secret_key=secret_key, secure=False)
@@ -215,19 +215,26 @@ def save_docker_image(image_name: str, output_path: str):
     print(f"Docker image saved: {output_path}")
 
 
-def upload_to_minio(minio_client: Minio, bucket_name: str, object_name: str, file_path: str):
-    """MinIO에 tar 파일 업로드"""
+def upload_to_minio(minio_client, bucket_name, object_name, file_path):
+    
     file_size = os.path.getsize(file_path)
-    
+    chunk_size = 10 * 1024 * 1024  # 10MB씩 업로드
+
+    print(f"upload_to_minio: {minio_client}, bucket_name: {bucket_name}, object_name: {object_name}, file_path: {file_path}")
+
     with open(file_path, "rb") as file_data, tqdm(total=file_size, unit="B", unit_scale=True, desc=f"Uploading {object_name}") as pbar:
-        def progress_callback(bytes_uploaded):
-            pbar.update(bytes_uploaded - pbar.n)
-        
-        minio_client.fput_object(bucket_name, object_name, file_path)
-    
+        minio_client.put_object(
+            bucket_name=bucket_name,
+            object_name=object_name,
+            data=file_data,  # ✅ `bytes`가 아니라 `file_data` 객체 자체를 전달
+            length=file_size,
+            content_type="application/octet-stream"
+        )
+        pbar.update(file_size)  # ✅ 업로드가 완료되었으므로 진행률 업데이트
+
     print(f"File uploaded successfully: {object_name}")
-
-
+    
+    
 def http_post(url, payload):
     """
     결과 데이터를 지정된 URL로 POST 요청을 보냄.

@@ -47,6 +47,7 @@ CREATE TABLE clients (
     job_id TEXT,  -- 작업 ID (외래키)
     client_name TEXT,  -- 클라이언트 이름
     data_id TEXT,  -- 데이터 ID (외래키)
+    project_id TEXT,
     creation_time timestamp with time zone  -- 생성 시간 (기본값 현재 시간)
 
 );
@@ -56,7 +57,7 @@ CREATE TABLE check_status (
     check_status_id TEXT PRIMARY KEY,  -- 체크 상태 ID
     client_id TEXT,  -- 클라이언트 ID (외래키)
     job_id TEXT,  -- 작업 ID (외래키)
-    validation_status BOOLEAN NOT NULL DEFAULT FALSE,  -- 검증 상태 (기본값 FALSE)
+    validation_status INTEGER NOT NULL DEFAULT -1,  -- 검증 상태 (기본값 FALSE)
     termination_status INTEGER NOT NULL DEFAULT -1,  -- 종료 상태 (기본값 FALSE)
     creation_time timestamp with time zone,  -- 생성 시간 (기본값 현재 시간)
 

@@ -3,6 +3,7 @@ from app.schemas.project import ProjectCreate, Project
 from app.service.base import fetch_one, fetch_all, execute
 from datetime import datetime, timezone
 import subprocess
+import asyncio
 
 async def create_project(data: ProjectCreate, pool):
     """
@@ -27,29 +28,32 @@ async def create_project(data: ProjectCreate, pool):
     ]
 
     print(f"Running provision.py: {' '.join(provision_command)}")
-    
+
     try:
-        # * 실시간 로그 출력하도록 변경
-        process = subprocess.Popen(
-            provision_command,
+        # ✅ 비동기적으로 로그를 출력할 수 있도록 변경
+        process = await asyncio.create_subprocess_exec(
+            *provision_command,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True  # * 문자열로 변환하여 실시간 출력
+            stderr=subprocess.PIPE
         )
 
-        # * 표준 출력 및 오류 로그 실시간 출력
-        for line in process.stdout:
-            print(f"[provision.py LOG]: {line.strip()}")
+        # ✅ `async for`를 사용하여 `stdout`, `stderr`을 비동기적으로 읽기
+        async for line in process.stdout:
+            print(f"[provision.py LOG]: {line.decode().strip()}")
 
-        for line in process.stderr:
-            print(f"[provision.py ERROR]: {line.strip()}")
+        async for line in process.stderr:
+            log_line = line.decode().strip()
+            if "Loading Docker Image" in log_line or "Saving Docker Image" in log_line:
+                print(f"[provision.py INFO]: {log_line}")  # INFO 로그로 출력
+            else:
+                print(f"[provision.py ERROR]: {log_line}")  # 실제 오류만 ERROR로 출력
 
-        process.wait()  # * 프로세스 종료까지 대기
+        await process.wait()  # ✅ 비동기 대기
         print(f"* provision.py finished with exit code {process.returncode}")
 
     except Exception as e:
         print(f"* provision failed: {e}")
-        
+
     return Project(**row)
 
 async def get_project(project_id: str) -> Optional[Project]:
@@ -89,11 +93,11 @@ async def validation_check(project_id: str):
     provision_script = "../nautilus/api/run/validation_deploy.py"  # nautilus/ 디렉토리에 위치
     config_name = f"{project_id}_config.json"
     validation_check_command = [
-        "python", provision_script,
+        "python3", provision_script,
         "--config", config_name
     ]
 
-    print(f"Running provision.py: {' '.join(validation_check_command)}")
+    print(f"Running validation_deploy.py: {' '.join(validation_check_command)}")
     
     try:
         # * 실시간 로그 출력하도록 변경
@@ -106,13 +110,13 @@ async def validation_check(project_id: str):
 
         # * 표준 출력 및 오류 로그 실시간 출력
         for line in process.stdout:
-            print(f"[validation_check.py LOG]: {line.strip()}")
+            print(f"[validation_check FUNC LOG]: {line.strip()}")
 
         for line in process.stderr:
-            print(f"[validation_check.py ERROR]: {line.strip()}")
+            print(f"[validation_check FUNC ERROR]: {line.strip()}")
 
         process.wait()  # * 프로세스 종료까지 대기
-        print(f"* validation_check.py finished with exit code {process.returncode}")
+        print(f"* validation_check FUNC finished with exit code {process.returncode}")
 
     except Exception as e:
         print(f"* validation_check failed: {e}")

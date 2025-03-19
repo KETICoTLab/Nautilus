@@ -1,8 +1,20 @@
-from nautilus.core.communicate.k8s import is_exist_namespace, create_namespace, create_client_deployment, copy_to_container, connect_get_namespaced_pod_exec
-from nautilus.core.communicate.containerd import is_image_exists, remove_containerd_image, load_containerd_image
-from nautilus.core.communicate.minio_storage import pull_pv_image_tar_from_minio
 import os
 import subprocess
+import sys
+# 현재 파일 기준으로 최상위 Nautilus 디렉토리를 sys.path에 추가
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+
+# 같은 디렉토리(`core/communicate/`)에 있는 모듈 import
+from .k8s import (
+    is_exist_namespace,
+    create_namespace,
+    create_client_deployment,
+    create_server_deployment,
+    copy_to_container,
+    connect_get_namespaced_pod_exec
+)
+from .containerd import is_image_exists, remove_containerd_image, load_containerd_image
+from .minio_storage import pull_pv_image_tar_from_minio
 
     # 0. minio 에 이미지 불러오기
     # 1. Deployment
@@ -45,16 +57,53 @@ def run_join_playbook(target_host):
 
 
 def run_ansible_playbook(playbook_path, target_host):
-  command = ["bash", playbook_path, target_host]
-  process = subprocess.run(command, capture_output=True, text=True)
 
-  print("Playbook STDOUT:", process.stdout)
-  print("Playbook STDERR:", process.stderr)
+  vault_password_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/ansible_project/inventory/host_vars/vaultpass"))
+  extra_vars_file = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../../workspace/ansible_project/inventory/host_vars/{target_host}.yml"))
+
+  print(f"validation.py - run_ansible_playbook) command: ansible-playbook -i {target_host}, -e target_host={target_host} --vault-password-file {vault_password_file} --extra-vars @{extra_vars_file} {playbook_path}")
+
+  # ✅ `--vault-password-file` 및 `--extra-vars` 추가
+  command = [
+      "ansible-playbook", 
+      "-i", f"{target_host},",  
+      "-e", f"target_host={target_host}",
+      "--vault-password-file", vault_password_file,
+      "--extra-vars", f"@{extra_vars_file}",
+      playbook_path
+  ]
+  print(f"validation.py - run_ansible_playbook) command: {command}")
+  process = subprocess.Popen(
+      command,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      text=True,
+      bufsize=1,  # 실시간 출력
+      universal_newlines=True
+  )
+
+  # ✅ 표준 출력(STDOUT) 실시간 출력
+  for line in iter(process.stdout.readline, ""):
+      print("Playbook STDOUT:", line.strip())
+
+  # ✅ 표준 에러(STDERR) 실시간 출력
+  for line in iter(process.stderr.readline, ""):
+      print("Playbook STDERR:", line.strip())
+
+  # ✅ 프로세스 종료 대기
+  process.stdout.close()
+  process.stderr.close()
+  process.wait()
+  
+  print(f"validation.py - run_ansible_playbook) Playbook execution finished with exit code {process.returncode}")
+
 
 ### playbook생성. 선택한 data에 맞는 client의 host를 조회하여 반복문으로 함수 실행 
 def load_nautilus_image(target_host):
-  playbook_path = "../workspace/ansible_project/playbook/load_nautilus_img.yml"
-  print("playbook_path")
+  print(f"validation.py - load_nautilus_image) target host: {target_host}")
+  playbook_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/ansible_project/playbook/load_nautilus_img.yml"))
+  print(f"validation.py - load_nautilus_image) playbook_path: {playbook_path}")
+
   run_ansible_playbook(playbook_path, target_host)
 
 
