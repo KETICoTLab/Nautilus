@@ -17,7 +17,7 @@
     - name: Check if openssh-server is installed by attempting to install it (raw module)
       raw: |
         if ! rpm -q openssh-server; then
-          yum install -y openssh-server
+          apt-get install -y openssh-server
         fi
       when: ansible_ssh_host is defined  # SSH로 연결할 수 있을 때만 실행
 
