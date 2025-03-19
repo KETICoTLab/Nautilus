@@ -60,7 +60,8 @@ def deploy():
     image_path = os.path.join(LOCAL_WORKSPACE, IMAGE_NAME)
     print(f"download_from_minio) image_path: {image_path}")
     
-    download_from_minio(minio_client, MINIO_BUCKET, IMAGE_NAME, image_path)
+    # image_path 에 scp로 옮겨놓았음
+    #download_from_minio(minio_client, MINIO_BUCKET, IMAGE_NAME, image_path)
     
     docker_client = docker.from_env()
     load_docker_image(docker_client, image_path)
@@ -69,14 +70,15 @@ def deploy():
     
     # 프로젝트 YML 파일 복사 경로 수정
     project_yml_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/provision/project.yml"))
-    container_project_yml_path = "/workspace/nautilus/nautilus/workspace/provision/"
+    container_project_yml_path = "/workspace/nautilus/nautilus/api/etc/"
     
     copy_file_to_container(container, project_yml_path, container_project_yml_path)
 
     # 컨테이너 내부에서 실행할 스크립트 경로 수정
-    script_path = "/workspace/nautilus/nautilus/api/etc/provision.py"
+    script_path = "/workspace/nautilus/nautilus/api/etc/nt_provision.py"
     
     execute_script_in_container(container, script_path)
+    
     commit_docker_container(docker_client, container, NEW_IMAGE_NAME)
 
     save_docker_image(NEW_IMAGE_NAME, TAR_PATH)

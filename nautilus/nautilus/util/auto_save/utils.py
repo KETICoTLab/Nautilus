@@ -185,10 +185,30 @@ def copy_file_to_container(container, local_path, container_path):
     print(f"[INFO] File copied: {local_path} -> {container_path}")
 
 def execute_script_in_container(container, script_path):
-    """Execute a Python script inside a Docker container."""
-    print(f"[INFO] Executing script in container: {script_path}")
-    container.exec_run(f"python {script_path}")
+    """컨테이너 내부에서 지정된 디렉토리에서 Python 스크립트 실행"""
+    script_dir = "/workspace/nautilus/nautilus/api/etc"  # 실행할 디렉토리
+    script_name = "nt_provision.py"  # 실행할 스크립트
+
+    print(f"[INFO] Changing working directory to {script_dir} in container")
+    
+    command = f"cd {script_dir} && python3 {script_name}"
+    print(f"[INFO] Executing script in container: {command}")
+
+    exit_code, output = container.exec_run(
+        cmd=["/bin/sh", "-c", command],  # 쉘 환경에서 실행
+        privileged=True,  # 루트 권한 부여
+        user="root",  # 루트 계정으로 실행
+        tty=True,  # 터미널 환경 활성화
+        workdir=script_dir  # 실행 디렉토리 설정
+    )
+
     print(f"[INFO] Script execution completed: {script_path}")
+    print(f"[INFO] Exit Code: {exit_code}")
+    print(f"[INFO] Output: {output.decode()}")
+
+    if exit_code != 0:
+        raise Exception(f"[ERROR] Script execution failed inside container: {output.decode()}")
+
 
 def commit_docker_container(client, container, new_image_name):
     """Commit changes in a container to a new Docker image."""

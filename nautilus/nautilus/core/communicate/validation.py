@@ -72,6 +72,7 @@ def run_ansible_playbook(playbook_path, target_host):
       "--extra-vars", f"@{extra_vars_file}",
       playbook_path
   ]
+  
   print(f"validation.py - run_ansible_playbook) command: {command}")
   process = subprocess.Popen(
       command,
