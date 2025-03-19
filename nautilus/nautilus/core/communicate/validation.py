@@ -12,14 +12,37 @@ import subprocess
     # 2. train.py 파일 컨테이너로 복사
     # 3. simulation exec 명령어 날리기
 def run_join_playbook(target_host):
-  print(f"run_join_playbook) target host: {target_host}")
+  print(f"validation.py - run_join_playbook) target host: {target_host}")
   script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/scripts/join_worker_node.sh"))
 
-  command = ["bash", script_path, target_host]
-  process = subprocess.run(command, capture_output=True, text=True)
+  print(f"validation.py - run_join_playbook) script_path: {script_path}")
 
-  print("Playbook STDOUT:", process.stdout)
-  print("Playbook STDERR:", process.stderr)
+  # ✅ `subprocess.Popen`을 사용하여 실시간 로그 출력
+  command = ["bash", script_path, target_host]
+  process = subprocess.Popen(
+      command,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      text=True,
+      bufsize=1,  # 실시간 출력
+      universal_newlines=True
+  )
+
+  # ✅ 표준 출력(STDOUT) 실시간 출력
+  for line in iter(process.stdout.readline, ""):
+      print("Playbook STDOUT:", line.strip())
+
+  # ✅ 표준 에러(STDERR) 실시간 출력
+  for line in iter(process.stderr.readline, ""):
+      print("Playbook STDERR:", line.strip())
+
+  # ✅ 프로세스 종료 대기
+  process.stdout.close()
+  process.stderr.close()
+  process.wait()
+  
+  print(f"validation.py - run_join_playbook) Playbook execution finished with exit code {process.returncode}")
+
 
 def run_ansible_playbook(playbook_path, target_host):
   command = ["bash", playbook_path, target_host]
