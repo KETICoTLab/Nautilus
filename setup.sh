@@ -71,4 +71,5 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 export KUBECONFIG=$HOME/.kube/config
 
 # 📌 Docker 그룹 적용 (현재 사용자가 새 그룹 적용을 위해 로그아웃/로그인 필요 없이 적용)
-newgrp docker
+sudo usermod -aG docker $(whoami)
+sudo systemctl restart docker

@@ -158,16 +158,26 @@ def list_namespaced_pod(namespace: str):
 
 def get_pod_name_by_deployment(namespace: str, deployment_name: str):
     """Deployment가 생성한 Pod의 이름을 가져오는 함수"""
-    core_api = client.CoreV1Api()
 
     # 해당 Deployment의 Pod 목록 조회
-    pod_list = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={namespace}")
+    pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector=f"app={namespace}")
 
     for pod in pod_list.items:
         if pod.metadata.name.startswith(deployment_name):
             return pod.metadata.name  # 가장 먼저 찾은 Pod 반환
 
     return None  # Pod를 찾지 못한 경우
+
+def list_pods_by_deployment(namespace: str, deployment_name: str):
+    """Deployment가 생성한 모든 Pod의 이름을 가져오는 함수"""
+    config.load_kube_config()  # 쿠버네티스 클러스터 설정 로드
+
+    # 해당 Deployment의 Pod 목록 조회
+    pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector=f"app={deployment_name}")
+
+    pod_names = [pod.metadata.name for pod in pod_list.items]
+
+    return pod_names  # 모든 Pod 이름 리스트 반환
 
 def list_service_for_all_namespace():
     """모든 네임스페이스에서 Service 목록 조회"""
@@ -382,7 +392,7 @@ def connect_get_namespaced_service_proxy(namespace: str, service_name: str):
     """특정 Service에 Proxy 연결"""
     return v1.connect_get_namespaced_service_proxy(service_name, namespace)
 
-def copy_local_to_container(pod_name: str, namespace: str, local_file_path: str, container_path: str, type: str = "file"):
+def copy_to_container(pod_name: str, namespace: str, local_file_path: str, container_path: str, type: str = "file"):
     """
     주어진 파일을 Kubernetes Pod 내 컨테이너로 복사하는 함수.
     

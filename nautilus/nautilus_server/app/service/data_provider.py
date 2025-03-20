@@ -64,11 +64,11 @@ ansible_ssh_password: "{password}"
 
     # Ansible Vault를 사용하여 파일 암호화
     subprocess.run(
-        ["ansible-vault", "encrypt", "--vault-password-file", str(vault_password_path), str(host_vars_path), str(data_provider_id)],
+        ["ansible-vault", "encrypt", "--vault-password-file", str(vault_password_path), str(host_vars_path)],
         check=True
     )
     
-    run_join_playbook(ip_address)
+    run_join_playbook(ip_address, str(data_provider_id))
     
     
 async def get_data_provider(data_provider_id: str) -> Optional[DataProvider]:
