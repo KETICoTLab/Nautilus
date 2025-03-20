@@ -64,13 +64,6 @@ def main(config_name):
         # 3. Train 파일 컨테이너에 복사
         copy_local_to_container(pod_name=pod_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
         print(f"copy_local_to_container done..")
-
-        ### client start-up 모드 진입
-        # 실행할 명령어 정의
-        client_startup_command = f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/start.sh"
-        # client Start-up 실행
-        print(f"- Executing (client_startup_command): {client_startup_command}")
-        execute_command(pod_name=pod_name, command=client_startup_command, namespace=namespace)
         ######
         
     # 4. simulation 실행 - pass?
