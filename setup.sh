@@ -63,3 +63,12 @@ sudo apt-get install sshpass
 echo "🚀 Running Ansible Playbook: $PLAYBOOK_PATH"
 echo "$PASSWARD" | ansible-playbook "$PLAYBOOK_PATH" --extra-vars "target_host=$TARGET_HOST ansible_become_pass=$PASSWARD"
 echo "✅ Setup completed successfully!"
+
+# 📌 Kubernetes 설정
+mkdir -p $HOME/.kube
+sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+export KUBECONFIG=$HOME/.kube/config
+
+# 📌 Docker 그룹 적용 (현재 사용자가 새 그룹 적용을 위해 로그아웃/로그인 필요 없이 적용)
+newgrp docker

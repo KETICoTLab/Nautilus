@@ -49,7 +49,7 @@ def deploy():
     LOCAL_WORKSPACE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/images/"))
     
     CONTAINER_NAME = "nautilus-container"
-    NEW_IMAGE_NAME = "nautilus-pv-updated"
+    NEW_IMAGE_NAME = "nautilus-pv-updated:latest"
     NEW_IMAGE_TAR = "nautilus-pv-updated.tar"
     
     # 저장 경로 조정
@@ -73,16 +73,22 @@ def deploy():
     container_project_yml_path = "/workspace/nautilus/nautilus/api/etc/"
     
     copy_file_to_container(container, project_yml_path, container_project_yml_path)
+    print(f"copy_file_to_container done...")
 
     # 컨테이너 내부에서 실행할 스크립트 경로 수정
     script_path = "/workspace/nautilus/nautilus/api/etc/nt_provision.py"
     
     execute_script_in_container(container, script_path)
+    print(f"execute_script_in_container done...")
     
     commit_docker_container(docker_client, container, NEW_IMAGE_NAME)
+    print(f"commit_docker_container done...")
 
     save_docker_image(NEW_IMAGE_NAME, TAR_PATH)
+    print(f"save_docker_image done...")
+    
     upload_to_minio(minio_client, MINIO_BUCKET, NEW_IMAGE_TAR, TAR_PATH)
+    print(f"upload_to_minio done...")
     
     print(f"Deployment completed successfully. New image stored in MinIO: {MINIO_BUCKET}/{NEW_IMAGE_TAR}")
 

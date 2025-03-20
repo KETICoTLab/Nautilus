@@ -218,21 +218,15 @@ def commit_docker_container(client, container, new_image_name):
     return image
 ###
 def save_docker_image(image_name: str, output_path: str):
-    """Docker 이미지를 tar 파일로 저장"""
-    client = docker.DockerClient(base_url='unix://var/run/docker.sock', timeout=1200) # 15분 타임아웃 설정
-    
+    """Docker 이미지를 tar 파일로 저장"""    
     print(f"Saving Docker image: {image_name} to {output_path}")
-    image = client.images.get(image_name)
-    image_stream = image.save()
     
-    total_size = sum(len(chunk) for chunk in image_stream)
-    
-    with open(output_path, "wb") as f, tqdm(total=total_size, unit="B", unit_scale=True, desc="Saving Docker Image") as pbar:
-        for chunk in image.save():
-            f.write(chunk)
-            pbar.update(len(chunk))
-    
-    print(f"Docker image saved: {output_path}")
+    try:
+        subprocess.run(["docker", "save", "-o", output_path, image_name], check=True)
+        print(f"Docker image saved command: docker save -o {output_path} {image_name}")
+        print(f"Docker image saved successfully: {output_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to save Docker image: {e}")
 
 
 def upload_to_minio(minio_client, bucket_name, object_name, file_path):
