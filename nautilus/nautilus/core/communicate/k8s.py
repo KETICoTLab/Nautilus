@@ -238,7 +238,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
         metadata=client.V1ObjectMeta(
             #name=f"{project_id}-site-{site}",
             name=f"site-{site}",
-            labels={"app": namespace}  # ✅ `role` 제거
+            labels={"app": namespace}
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
@@ -273,7 +273,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                                 "--set", "secure_train=true", f"uid=site-{site}", 
                                 "config_folder=config", "org=nvidia"
                             ],
-                            command=["/bin/bash", "-c", f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
+                            command=["/bin/bash", "-c", f"pip install torch && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
                         )
                     ]
                 )
@@ -300,7 +300,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
         metadata=client.V1ObjectMeta(
             #name=f"{project_id}-server",
             name=f"server",
-            labels={"app": namespace}  # ✅ `role` 제거
+            labels={"app": namespace}
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
@@ -331,10 +331,10 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                             ),
                             args=[
                                 "-u", "-m", "nvflare.private.fed.app.server.server_train",
-                                "-m", f"/workspace/nvfl/server", "-s", "fed_client.json",
+                                "-m", f"/workspace/nvfl/server", "-s", "fed_server.json",
                                 "--set", "secure_train=true", "config_folder=config", "org=nvidia"
                             ],
-                            command=["/bin/bash", "-c", f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
+                            command=["/bin/bash", "-c", f"pip install torch && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
                         )
                     ]
                 )
