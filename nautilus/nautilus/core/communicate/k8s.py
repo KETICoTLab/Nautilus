@@ -273,7 +273,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                                 "--set", "secure_train=true", f"uid=site-{site}", 
                                 "config_folder=config", "org=nvidia"
                             ],
-                            command=["/bin/bash", "-c", f"pip install torch && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
+                            command=["/bin/bash", "-c", f"pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
                         )
                     ]
                 )
