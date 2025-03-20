@@ -108,14 +108,20 @@ def load_nautilus_image(target_host):
   run_ansible_playbook(playbook_path, target_host)
 
 
-def apply_nautilus_deployment(project_id: str, site: int, node_name: str):
-  namespace = "nautilus"
-  if not is_exist_namespace(namespace):
-    create_namespace(namespace)
-  else:
-    create_server_deployment(project_id, node_name)
-    create_client_deployment(project_id, site, node_name)
-
+def apply_nautilus_deployment(project_id: str, site: int, node_name: str, who: str):
+    namespace = "nautilus"
+    
+    if not is_exist_namespace(namespace):
+        create_namespace(namespace)
+    else:
+        if who == "client":
+            create_client_deployment(project_id, site, node_name)
+        elif who == "server":
+            create_server_deployment(project_id, node_name)
+        else:
+            raise ValueError("Invalid value for 'who'. Must be either 'client' or 'server'.")
+          
+          
 ## node name: data_provider_id
 ## pod name : {project_ID}-client-site-N 이런식으로~
 ## train.py -> ui에서 선택한 파일이다 보니, 로컬 파일이 아니라서 ui에서 받은 파일을 어떻게 이 함수로 넘길지는 생각해 봐야 함
