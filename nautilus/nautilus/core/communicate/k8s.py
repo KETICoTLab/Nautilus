@@ -334,7 +334,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                                 "-m", f"/workspace/nvfl/server", "-s", "fed_server.json",
                                 "--set", "secure_train=true", "config_folder=config", "org=nvidia"
                             ],
-                            command=["/bin/bash", "-c", f"pip install torch && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
+                            command=["/bin/bash", "-c", f"pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
                         )
                     ]
                 )
