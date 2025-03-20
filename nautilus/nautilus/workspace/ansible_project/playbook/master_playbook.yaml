@@ -203,6 +203,7 @@
           enabled: yes
         loop:
           - containerd
+          - docker
           - kubelet
 
   - name: Disable swap
@@ -231,6 +232,12 @@
   - name: Initialize Kubernetes cluster
     command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
     register: kubeadm_init_output
+
+  - name: Configure kubectl for root user
+    shell: |
+       mkdir -p $HOME/.kube
+       cp /etc/kubernetes/admin.conf $HOME/.kube/config
+       chown $(id -u):$(id -g) $HOME/.kube/config
 
   - name: Deploy network plugin (Calico)
     shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
