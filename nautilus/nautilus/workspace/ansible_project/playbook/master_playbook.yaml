@@ -229,7 +229,7 @@
     command: kubeadm config images pull
 
   - name: Initialize Kubernetes cluster
-    command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
+    command: kubeadm init --node-name master-node --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
     register: kubeadm_init_output
 
   - name: Configure kubectl for root user
@@ -254,6 +254,16 @@
   - name: Show join command for worker nodes
     debug:
       msg: "{{ join_command.stdout }}"
+
+  - name: Remove NoSchedule taint from master node
+    command: >
+      kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
+    register: taint_result
+    changed_when: "'tainted' in taint_result.stdout or 'taint' not in taint_result.stdout"
+
+  - name: Show taint removal result
+    debug:
+      var: taint_result.stdout
 
   - name: Verify cluster status
     shell: kubectl get nodes

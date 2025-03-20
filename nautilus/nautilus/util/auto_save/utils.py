@@ -216,7 +216,7 @@ def commit_docker_container(client, container, new_image_name):
     image = container.commit(repository=new_image_name)
     print(f"[INFO] Docker container committed: {new_image_name}")
     return image
-
+###
 def save_docker_image(image_name: str, output_path: str):
     """Docker 이미지를 tar 파일로 저장"""
     client = docker.DockerClient(base_url='unix://var/run/docker.sock', timeout=1200) # 15분 타임아웃 설정

@@ -10,9 +10,9 @@ print(f"service/client.py) BASE_DIR resolved to: {BASE_DIR}")
 async def create_client(project_id: str, client_data: ClientCreate, pool):
     client_id = "C-KR-" + client_data.client_name
         
-    # `data_id`를 사용하여 `data_providers`에서 `host_information` 조회
+    # `data_id`를 사용하여 `data_providers`에서 `host_information` 및 `data_provider_id` 조회
     provider_query = """
-    SELECT dp.host_information
+    SELECT dp.data_provider_id, dp.host_information
     FROM data_providers dp
     JOIN data d ON dp.data_provider_id = d.data_provider_id
     WHERE d.data_id = $1;
@@ -22,7 +22,7 @@ async def create_client(project_id: str, client_data: ClientCreate, pool):
     if not provider_row or "host_information" not in provider_row:
         raise Exception(f"No host_information found for data_id: {client_data.data_id}")
 
-    # `host_information`에서 `ip_address` 추출
+    data_provider_id = provider_row["data_provider_id"]
     host_information = json.loads(provider_row["host_information"])
     ip_address = host_information.get("ip_address")
 
@@ -32,20 +32,23 @@ async def create_client(project_id: str, client_data: ClientCreate, pool):
     # Config 파일 경로
     config_path = os.path.join(BASE_DIR, "nautilus", "workspace", "configs", f"{project_id}_config.json")
     print(f"[DEBUG] Absolute config_path: {config_path}")
+
     # 기존 `config.json` 파일 로드
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             config_data = json.load(f)
     else:
-        config_data = {"project_id": project_id, "target_hosts": [], "client_info": {}}
+        config_data = {"project_id": project_id, "target_hosts": [], "client_info": {}, "nodes": [], "client_list": []}
 
-    # `target_hosts`에 `ip_address` 추가
+    # `target_hosts` 및 `client_list`에 추가
     if ip_address not in config_data["target_hosts"]:
         config_data["target_hosts"].append(ip_address)
         config_data["client_list"].append(client_id)
-        # `client_info`에 site-n 추가 (site index = 1부터 시작)
-        site_index = len(config_data["target_hosts"])  # site-n의 n값 결정
+        site_index = len(config_data["target_hosts"])
         config_data["client_info"][f"site-{site_index}"] = client_data.data_id
+
+    # `nodes`에 `data_provider_id` 추가 (중복 확인 없이 항상 추가)
+    config_data["nodes"].append(data_provider_id)
 
     # 변경된 `config.json` 저장
     with open(config_path, "w") as f:
@@ -69,6 +72,7 @@ async def create_client(project_id: str, client_data: ClientCreate, pool):
     await fetch_one(pool, status_query, check_status_id, client_id)
 
     return ClientResponse(**dict(client_row))
+
 
 async def get_clients(project_id: str, name: str = None, pool=None):
     """특정 프로젝트의 모든 클라이언트 조회"""

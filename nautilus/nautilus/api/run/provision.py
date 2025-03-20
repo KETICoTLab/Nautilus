@@ -105,6 +105,7 @@ if __name__ == "__main__":
         "target_hosts": [],
         "client_info": {},
         "client_list": [],
+        "nodes": [],
         "HOST": f"http://{host_ip}:8000"
     }
     

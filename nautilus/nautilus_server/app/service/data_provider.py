@@ -31,12 +31,12 @@ async def create_data_provider(data: DataProviderCreate, pool) -> DataProvider:
     row_dict["host_information"] = json.loads(row_dict["host_information"])  # JSON 문자열을 다시 객체로 변환
 
     # Ansible host_vars YAML 파일 생성
-    await create_ansible_host_vars(row_dict["host_information"])
+    await create_ansible_host_vars(row_dict["host_information"], data_provider_id)
 
     return DataProvider(**row_dict)
 
 
-async def create_ansible_host_vars(host_information):
+async def create_ansible_host_vars(host_information, data_provider_id):
     """
     Ansible host_vars 폴더에 해당 호스트의 yml 파일을 생성하고 암호화함.
     """
@@ -64,7 +64,7 @@ ansible_ssh_password: "{password}"
 
     # Ansible Vault를 사용하여 파일 암호화
     subprocess.run(
-        ["ansible-vault", "encrypt", "--vault-password-file", str(vault_password_path), str(host_vars_path)],
+        ["ansible-vault", "encrypt", "--vault-password-file", str(vault_password_path), str(host_vars_path), str(data_provider_id)],
         check=True
     )
     

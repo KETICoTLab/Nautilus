@@ -156,6 +156,19 @@ def list_namespaced_pod(namespace: str):
     """특정 네임스페이스에서 Pod 목록 조회"""
     return v1.list_namespaced_pod(namespace)
 
+def get_pod_name_by_deployment(namespace: str, deployment_name: str):
+    """Deployment가 생성한 Pod의 이름을 가져오는 함수"""
+    core_api = client.CoreV1Api()
+
+    # 해당 Deployment의 Pod 목록 조회
+    pod_list = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={namespace}")
+
+    for pod in pod_list.items:
+        if pod.metadata.name.startswith(deployment_name):
+            return pod.metadata.name  # 가장 먼저 찾은 Pod 반환
+
+    return None  # Pod를 찾지 못한 경우
+
 def list_service_for_all_namespace():
     """모든 네임스페이스에서 Service 목록 조회"""
     return v1.list_service_for_all_namespaces()
@@ -236,8 +249,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
         api_version="apps/v1",
         kind="Deployment",
         metadata=client.V1ObjectMeta(
-            #name=f"{project_id}-site-{site}",
-            name=f"site-{site}",
+            name=f"{project_id}-site-{site}",
             labels={"app": namespace}
         ),
         spec=client.V1DeploymentSpec(
@@ -253,7 +265,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                     node_selector={"kubernetes.io/hostname": node_name}, 
                     containers=[
                         client.V1Container(
-                            name=f"site-{site}",
+                            name=f"{project_id}-site-{site}",
                             image=image,
                             image_pull_policy="Never",
                             resources=client.V1ResourceRequirements(
@@ -269,8 +281,8 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                             ),
                             args=[
                                 "-u", "-m", "nvflare.private.fed.app.client.client_train",
-                                "-m", f"/workspace/nvfl/site-{site}", "-s", "fed_client.json",
-                                "--set", "secure_train=true", f"uid=site-{site}", 
+                                "-m", f"/workspace/nvfl/{project_id}-site-{site}", "-s", "fed_client.json",
+                                "--set", "secure_train=true", f"uid={project_id}-site-{site}", 
                                 "config_folder=config", "org=nvidia"
                             ],
                             command=["/bin/bash", "-c", f"pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
@@ -298,8 +310,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
         api_version="apps/v1",
         kind="Deployment",
         metadata=client.V1ObjectMeta(
-            #name=f"{project_id}-server",
-            name=f"server",
+            name=f"{project_id}-server",
             labels={"app": namespace}
         ),
         spec=client.V1DeploymentSpec(
@@ -331,7 +342,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                             ),
                             args=[
                                 "-u", "-m", "nvflare.private.fed.app.server.server_train",
-                                "-m", f"/workspace/nvfl/server", "-s", "fed_server.json",
+                                "-m", f"/workspace/nvfl/{project_id}-server", "-s", "fed_server.json",
                                 "--set", "secure_train=true", "config_folder=config", "org=nvidia"
                             ],
                             command=["/bin/bash", "-c", f"pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/mylocalhost/startup/sub_start.sh"]
@@ -371,7 +382,7 @@ def connect_get_namespaced_service_proxy(namespace: str, service_name: str):
     """특정 Service에 Proxy 연결"""
     return v1.connect_get_namespaced_service_proxy(service_name, namespace)
 
-def copy_to_container(pod_name: str, namespace: str, local_file_path: str, container_path: str, type: str = "file"):
+def copy_local_to_container(pod_name: str, namespace: str, local_file_path: str, container_path: str, type: str = "file"):
     """
     주어진 파일을 Kubernetes Pod 내 컨테이너로 복사하는 함수.
     
@@ -383,27 +394,29 @@ def copy_to_container(pod_name: str, namespace: str, local_file_path: str, conta
     """
     try:
         if type == "file":
-            # kubectl cp 명령어 실행: <로컬 파일 경로> <namespace>/<Pod 이름>:<컨테이너 경로>
             command = [
                 "kubectl", "cp", local_file_path,
                 f"{namespace}/{pod_name}:{container_path}"
             ]
         elif type == "folder":
-            # 폴더 복사의 경우 "-r" 옵션 추가
             command = [
                 "kubectl", "cp", "-r", local_file_path,
                 f"{namespace}/{pod_name}:{container_path}"
             ]
         else: 
-            print(f"not defined type {type}")
+            print(f"[ERROR] Undefined type: {type}")
             return
-            
-        # 명령어 실행
+        
+        print(f"[INFO] Running command: {' '.join(command)}")  # 디버깅용 로그 추가
         subprocess.run(command, check=True)
-        print(f"파일이 {pod_name} 컨테이너로 성공적으로 복사되었습니다!")
-    except subprocess.CalledProcessError as e:
-        print(f"파일 복사 실패: {e}")
+        print(f"[SUCCESS] File successfully copied to {pod_name} in container!")
 
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] File copy failed: {e}")
+        print(f"[DEBUG] Check if pod exists: kubectl get pods -n {namespace}")
+        print(f"[DEBUG] Check if namespace exists: kubectl get ns")
+        
+        
 if __name__ == "__main__":
     f = open('api_result.json', 'w')
 
