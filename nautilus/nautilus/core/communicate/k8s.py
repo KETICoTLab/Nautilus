@@ -1,7 +1,7 @@
 from kubernetes import client, config
 from typing import Optional
 import subprocess
-
+import shlex
 # def get_kubernetes_nodes():
 #     # Kubernetes 클라이언트 구성을 로드합니다 (로컬 kubeconfig 파일 사용)
 #     config.load_kube_config()
@@ -317,7 +317,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                         client.V1Container(
                             name=f"{project_id}-site-{site}",
                             image=image,
-                            image_pull_policy="Never",
+                            image_pull_policy="IfNotPresent",
                             resources=client.V1ResourceRequirements(
                                 limits=limits,
                                 requests=requests
@@ -383,7 +383,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                         client.V1Container(
                             name=f"server",
                             image=image,
-                            image_pull_policy="Never",
+                            image_pull_policy="IfNotPresent",
                             resources=client.V1ResourceRequirements(
                                 limits=limits,
                                 requests=requests
@@ -418,8 +418,11 @@ def connect_get_namespaced_pod_exec(namespace: str, pod_name: str, command: str)
     return v1.connect_get_namespaced_pod_exec(
         name=pod_name,
         namespace=namespace,
-        command=command.split(),
-        stderr=True, stdin=False, stdout=True, tty=False
+        command=shlex.split(command),
+        stderr=True,
+        stdin=False,
+        stdout=True,
+        tty=False
     )
 
 def connect_get_namespaced_pod_portforward(namespace: str, pod_name: str, ports: list):
