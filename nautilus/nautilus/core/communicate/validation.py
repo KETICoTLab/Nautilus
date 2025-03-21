@@ -107,17 +107,19 @@ def load_nautilus_image(target_host):
 
 
 def apply_nautilus_deployment(project_id: str, site: int, node_name: str, who: str):
+    print(f"apply_nautilus_deployment ing..")
     namespace = "nautilus"
-    
     if not is_exist_namespace(namespace):
         create_namespace(namespace)
+
+    if who == "client":
+        print(f"create_client_deployment ing..")
+        create_client_deployment(project_id, site, node_name)
+    elif who == "server":
+        print(f"create_server_deployment ing..")
+        create_server_deployment(project_id, node_name)
     else:
-        if who == "client":
-            create_client_deployment(project_id, site, node_name)
-        elif who == "server":
-            create_server_deployment(project_id, node_name)
-        else:
-            raise ValueError("Invalid value for 'who'. Must be either 'client' or 'server'.")
+        raise ValueError("Invalid value for 'who'. Must be either 'client' or 'server'.")
           
           
 ## node name: data_provider_id

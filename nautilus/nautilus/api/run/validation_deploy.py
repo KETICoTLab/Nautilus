@@ -64,6 +64,7 @@ def main(config_name):
         print(f"apply_nautilus_deployment done..")
 
         pod_full_name = get_pod_name_by_deployment(namespace, pod_name)
+        print(f"pod_full_name: {pod_full_name}")
         # 3. Train 파일 컨테이너에 복사
         copy_local_to_container(pod_name=pod_full_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
         print(f"copy_local_to_container done..")

@@ -161,8 +161,10 @@ def get_pod_name_by_deployment(namespace: str, deployment_name: str):
 
     # 해당 Deployment의 Pod 목록 조회
     pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector=f"app={namespace}")
+    print(f"get_pod_name_by_deployment: {pod_list}")
 
     for pod in pod_list.items:
+        print(f"for pod in pod_list.items: {pod.metadata.name}")
         if pod.metadata.name.startswith(deployment_name):
             return pod.metadata.name  # 가장 먼저 찾은 Pod 반환
 
