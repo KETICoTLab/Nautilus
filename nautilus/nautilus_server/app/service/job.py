@@ -7,7 +7,7 @@ from pathlib import Path
 import asyncio
 
 async def create_job(project_id: str, data: JobCreate, pool) -> Job:
-    job_id = "J-KR-" + data.job_name
+    job_id = "j-kr-" + data.job_name
     query = """
     INSERT INTO jobs (project_id, job_id, job_name, description, tags, creator_id, creation_time, modification_time, job_status, client_status, aggr_function, admin_info, data_id, global_model_id, contri_est_method, num_global_iteration, num_local_epoch, job_config)
     VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)

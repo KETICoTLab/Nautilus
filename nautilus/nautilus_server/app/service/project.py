@@ -9,7 +9,7 @@ async def create_project(data: ProjectCreate, pool):
     """
     number_of_client가 있으면 provision.py실행
     """
-    project_id = "P-KR-" + data.project_name
+    project_id = "p-kr-" + data.project_name
     
     query = """
     INSERT INTO projects (project_id, project_name, description, tags, creator_id, data_provider_ids, number_of_clients, number_of_jobs, number_of_subscriptions, project_image, creation_time, modification_time)

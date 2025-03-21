@@ -17,7 +17,7 @@ ANSIBLE_VAULT_PASS_PATH = "../nautilus/workspace/ansible_project/inventory/host_
 ANSIBLE_HOST_VARS_DIR = "../nautilus/workspace/ansible_project/inventory/host_vars"
 
 async def create_data_provider(data: DataProviderCreate, pool) -> DataProvider:
-    data_provider_id = "W-KR-" + data.data_provider_name
+    data_provider_id = "w-kr-" + data.data_provider_name
     host_information_json = json.dumps(data.host_information.dict())
 
     query = """
@@ -99,7 +99,7 @@ async def list_data_providers() -> List[DataProvider]:
 
 async def create_data_provider_data(data_provider_id: str, data: DataProviderDataCreate, pool) -> DataProviderData:
     from app.database import pool
-    data_id = "D-KR-"+data.data_name
+    data_id = "d-kr-"+data.data_name
     creation_time = datetime.now(timezone.utc)
     query = """
     INSERT INTO data (data_id, data_provider_id, item_code_id, data_name, description, creation_time, data)

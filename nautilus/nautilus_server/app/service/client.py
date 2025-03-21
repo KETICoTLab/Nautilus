@@ -8,7 +8,7 @@ import os
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")) #Nautilus/nautilus
 print(f"service/client.py) BASE_DIR resolved to: {BASE_DIR}")
 async def create_client(project_id: str, client_data: ClientCreate, pool):
-    client_id = "C-KR-" + client_data.client_name
+    client_id = "c-kr-" + client_data.client_name
         
     # `data_id`를 사용하여 `data_providers`에서 `host_information` 및 `data_provider_id` 조회
     provider_query = """
@@ -63,7 +63,7 @@ async def create_client(project_id: str, client_data: ClientCreate, pool):
     client_row = await fetch_one(pool, client_query, client_id, project_id, client_data.job_id, client_data.client_name, client_data.data_id)
 
     # check-status 생성
-    check_status_id = "CH-KR-"+ str(uuid.uuid4())[:8]
+    check_status_id = "ch-kr-"+ str(uuid.uuid4())[:8]
     status_query = """
     INSERT INTO check_status (check_status_id, client_id, validation_status, termination_status, creation_time)
     VALUES ($1, $2, -1, -1, NOW())
