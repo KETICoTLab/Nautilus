@@ -44,7 +44,7 @@ def main(config_name):
 
     print(f"Starting Nautilus Deployment for Project: {project_id}")
     server_pod_name = f"{project_id}-server" 
-    apply_nautilus_deployment(project_id=project_id, site=site, node_name="master-node", who="server")
+    apply_nautilus_deployment(project_id=project_id, site="none", node_name="master-node", who="server")
     
     namespace = "nautilus"
     for i, target_host in enumerate(target_hosts):
