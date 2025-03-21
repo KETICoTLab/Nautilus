@@ -69,6 +69,7 @@ def run_ansible_playbook(playbook_path, target_host):
         ))
 
         local_tar_path = "../../workspace/images/nautilus-pv-updated.tar"
+        playbook_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/ansible_project/playbook/load_nautilus_img_master.yml"))
         command = [
             "ansible-playbook",
             "-i", "localhost,",

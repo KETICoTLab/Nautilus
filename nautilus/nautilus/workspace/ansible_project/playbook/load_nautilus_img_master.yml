@@ -1,0 +1,33 @@
+---
+- name: Load Image into containerd to Master
+  hosts: "{{ target_host }}"
+  become: yes  # Run tasks as root
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    local_tar_path: "/tmp/nautilus-pv-updated.tar"
+    containerd_image_name: "nautilus-pv-updated:latest"
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system
+
+  tasks:
+    # -------------------------------
+    # Load Image into containerd
+    # -------------------------------
+    - name: Check if image exists in containerd
+      shell: "ctr -n k8s.io images list | grep '{{ containerd_image_name }}' || true"
+      register: image_check
+      changed_when: false
+
+    - name: Remove existing image if found
+      command: "ctr -n k8s.io images remove {{ containerd_image_name }}"
+      when: image_check.stdout != ""
+
+    - name: Load the image into containerd
+      command: ctr -n k8s.io images import {{ local_tar_path }}
+      register: import_result
+
+    - name: Show containerd import result
+      debug:
+        msg: "{{ import_result.stdout }}"
