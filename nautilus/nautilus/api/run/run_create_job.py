@@ -12,6 +12,9 @@ from nautilus.core.communicate.validation import (
     copy_local_to_container,
     execute_command
 )
+from nautilus.core.communicate.k8s import (
+    get_pod_name_by_deployment
+)
 
 create_job_py_path = os.path.join(ROOT_BASE_DIR, "nautilus", "simulation", "fedavg_create_job_runner.py")
 print(f"create_job_py_path: {create_job_py_path}")
@@ -44,9 +47,13 @@ def main(config_path, job_id, aggr_function, num_global_iteration, num_local_epo
     subprocess.run(job_command, check=True)
     print("Job creation completed!")
 
-    # 1. 서버 시작 (대기 상태 진입)
+
     print(f"* Starting server: {server_pod_name}")
-    execute_command(pod_name=server_pod_name, command=server_startup_command, namespace=namespace)
+    server_pod_full_name = get_pod_name_by_deployment(namespace, server_pod_name)
+    print(f"Deploying Server | Pod: {server_pod_name} | pod_full_name: {server_pod_full_name}")    
+    
+    ## server_pod_name으로 full pod name 조회한 후 pod_name=full_server_pod_name넣어야함
+    execute_command(pod_name=server_pod_full_name, command=server_startup_command, namespace=namespace)#full_server_pod_name넣어야함
 
     # 2. 생성된 Job 폴더 배포
     job_dir = os.path.join(ROOT_BASE_DIR, "nautilus", "workspace", "jobs", job_id)
@@ -59,20 +66,19 @@ def main(config_path, job_id, aggr_function, num_global_iteration, num_local_epo
         client_startup_command = f"/workspace/nautilus/workspace/provisioning/{project_id}/prod_00/site-{site}/startup/start.sh"
 
         print(f"* Deploying Site-{site} | Pod: {pod_name}")
+        pod_full_name = get_pod_name_by_deployment(namespace, pod_name)
+        print(f"Deploying Site-{site} | Pod: {pod_name} | pod_full_name: {pod_full_name}")
 
+        ## pod_name으로 full pod name 조회한 후 pod_name=full_pod_name넣어야함
         # 2-1. job 폴더 복사
         print(f"* Copying job folder to container...")
         copy_local_to_container(
-            pod_name=pod_name,
+            pod_name=pod_full_name,#full_pod_name넣어야함
             local_file_path=job_dir,
             container_path=container_path,
             namespace=namespace,
             type="folder"
         )
-
-        # 2-2. client start-up 실행
-        print(f"🏃 Executing client start-up command...")
-        execute_command(pod_name=pod_name, command=client_startup_command, namespace=namespace)
 
     print("All deployments completed successfully!")
 

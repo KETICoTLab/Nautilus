@@ -55,46 +55,70 @@ def run_join_playbook(target_host, data_provider_id, master_node_ip):
 
 
 def run_ansible_playbook(playbook_path, target_host):
+    """
+    Ansible Playbook 실행 함수.
+    - target_host가 'localhost'이면 로컬 모드로 실행하며 local_tar_path 인자를 포함
+    - 그 외에는 vault 및 extra_vars 방식으로 실행
+    """
 
-  vault_password_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/ansible_project/inventory/host_vars/vaultpass"))
-  extra_vars_file = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../../workspace/ansible_project/inventory/host_vars/{target_host}.yml"))
+    if target_host == "localhost":
+        # host_vars/localhost.yml 파일 경로
+        extra_vars_file = os.path.abspath(os.path.join(
+            os.path.dirname(__file__),
+            "../../workspace/ansible_project/inventory/host_vars/localhost.yml"
+        ))
 
-  print(f"validation.py - run_ansible_playbook) command: ansible-playbook -i {target_host}, -e target_host={target_host} --vault-password-file {vault_password_file} --extra-vars @{extra_vars_file} {playbook_path}")
+        local_tar_path = "../../workspace/images/nautilus-pv-updated.tar"
+        command = [
+            "ansible-playbook",
+            "-i", "localhost,",
+            "-e", "target_host=localhost",
+            "-e", f"local_tar_path={local_tar_path}",
+            "--extra-vars", f"@{extra_vars_file}",
+            playbook_path
+        ]
 
-  # ✅ `--vault-password-file` 및 `--extra-vars` 추가
-  command = [
-      "ansible-playbook", 
-      "-i", f"{target_host},",  
-      "-e", f"target_host={target_host}",
-      "--vault-password-file", vault_password_file,
-      "--extra-vars", f"@{extra_vars_file}",
-      playbook_path
-  ]
-  
-  print(f"validation.py - run_ansible_playbook) command: {command}")
-  process = subprocess.Popen(
-      command,
-      stdout=subprocess.PIPE,
-      stderr=subprocess.PIPE,
-      text=True,
-      bufsize=1,  # 실시간 출력
-      universal_newlines=True
-  )
+    else:
+        # 일반 worker 대상 실행 (Vault 포함)
+        vault_password_file = os.path.abspath(os.path.join(
+            os.path.dirname(__file__),
+            "../../workspace/ansible_project/inventory/host_vars/vaultpass"
+        ))
+        extra_vars_file = os.path.abspath(os.path.join(
+            os.path.dirname(__file__),
+            f"../../workspace/ansible_project/inventory/host_vars/{target_host}.yml"
+        ))
 
-  # ✅ 표준 출력(STDOUT) 실시간 출력
-  for line in iter(process.stdout.readline, ""):
-      print("Playbook STDOUT:", line.strip())
+        command = [
+            "ansible-playbook",
+            "-i", f"{target_host},",
+            "-e", f"target_host={target_host}",
+            "--vault-password-file", vault_password_file,
+            "--extra-vars", f"@{extra_vars_file}",
+            playbook_path
+        ]
 
-  # ✅ 표준 에러(STDERR) 실시간 출력
-  for line in iter(process.stderr.readline, ""):
-      print("Playbook STDERR:", line.strip())
+    print(f"[INFO] Ansible command to run: {' '.join(command)}")
 
-  # ✅ 프로세스 종료 대기
-  process.stdout.close()
-  process.stderr.close()
-  process.wait()
-  
-  print(f"validation.py - run_ansible_playbook) Playbook execution finished with exit code {process.returncode}")
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        universal_newlines=True
+    )
+
+    for line in iter(process.stdout.readline, ""):
+        print("Playbook STDOUT:", line.strip())
+
+    for line in iter(process.stderr.readline, ""):
+        print("Playbook STDERR:", line.strip())
+
+    process.stdout.close()
+    process.stderr.close()
+    process.wait()
+    print(f"validation.py - run_ansible_playbook) load_nautilus_img execution finished with exit code {process.returncode}")
 
 
 ### playbook생성. 선택한 data에 맞는 client의 host를 조회하여 반복문으로 함수 실행 

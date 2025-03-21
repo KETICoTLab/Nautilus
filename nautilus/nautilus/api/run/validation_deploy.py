@@ -22,6 +22,7 @@ from core.communicate.k8s import (
 )
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+namespace = "nautilus"
 
 def main(config_name):
     """Config 파일을 로드하여 Nautilus 배포 및 실행"""
@@ -43,10 +44,11 @@ def main(config_name):
     nodes = config_data["nodes"]
 
     print(f"Starting Nautilus Deployment for Project: {project_id}")
+    load_nautilus_image("localhost")
+    print(f"master load_nautilus_image done..")
     server_pod_name = f"{project_id}-server" 
     apply_nautilus_deployment(project_id=project_id, site="none", node_name="master-node", who="server")
-    
-    namespace = "nautilus"
+
     for i, target_host in enumerate(target_hosts):
         site = i + 1  # site-1, site-2, ... 순차 증가
         node_name = nodes[i] if i < len(nodes) else f"default-node-{site}"
@@ -59,7 +61,7 @@ def main(config_name):
 
         # 1. Nautilus Docker 이미지 로드
         load_nautilus_image(target_host)
-        print(f"load_nautilus_image done..")
+        print(f"worker load_nautilus_image done..")
 
         # 2. Kubernetes 배포 실행
         apply_nautilus_deployment(project_id=project_id, site=site, node_name=node_name, who="client")
