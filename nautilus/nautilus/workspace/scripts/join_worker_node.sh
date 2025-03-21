@@ -12,4 +12,6 @@ ansible-playbook -i "$1," \
        --vault-password-file "$SCRIPT_DIR/../ansible_project/inventory/host_vars/vaultpass" \
        --extra-vars "@$SCRIPT_DIR/../ansible_project/inventory/host_vars/$1.yml" \
        --extra-vars "target_host=$1" \
+       --extra-vars "node_name=$2" \
+       --extra-vars "master_node_ip=$3" \
        "$SCRIPT_DIR/../ansible_project/playbook/load_client_join.yml"

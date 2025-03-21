@@ -30,6 +30,18 @@
       update_cache: yes
       upgrade: dist
 
+  # ✅ 마스터 노드의 호스트네임 설정 추가
+  - name: Set hostname for master node
+    hostname:
+      name: "master-node"
+
+  # ✅ /etc/hosts 파일에 마스터 노드 정보 추가
+  - name: Ensure master node is in /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      line: "127.0.0.1 master-node"
+      state: present
+
   - name: Install required dependencies
     apt:
       name:
@@ -229,7 +241,7 @@
     command: kubeadm config images pull
 
   - name: Initialize Kubernetes cluster
-    command: kubeadm init --node-name master-node --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
+    command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
     register: kubeadm_init_output
 
   - name: Configure kubectl for root user

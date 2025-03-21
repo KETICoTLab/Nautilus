@@ -8,6 +8,8 @@
     minio_server_id: "minio"
     minio_server_pw: "minio123"
     kube_join_command: ""
+    node_name: ""
+    master_node_ip: "10.252.72.176"
 
   handlers:
     - name: Reload sysctl
@@ -40,6 +42,24 @@
       apt:
         update_cache: yes
         upgrade: dist
+
+    # ✅ 워커 노드의 호스트네임 설정 추가
+    - name: Set hostname for worker node
+      hostname:
+        name: "{{ node_name }}"
+
+    # ✅ /etc/hosts 파일에 마스터 노드 및 워커 노드 정보 추가
+    - name: Ensure master node is in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ master_node_ip }} master-node"
+        state: present
+
+    - name: Ensure worker node is in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "127.0.1.1 {{ node_name }}"
+        state: present
 
     - name: Install required dependencies
       apt:

@@ -68,7 +68,7 @@ ansible_ssh_password: "{password}"
         check=True
     )
     
-    run_join_playbook(ip_address, str(data_provider_id))
+    run_join_playbook(ip_address, str(data_provider_id), str("master_node_ip"))#master pc ip적어줘야 함.
     
     
 async def get_data_provider(data_provider_id: str) -> Optional[DataProvider]:
