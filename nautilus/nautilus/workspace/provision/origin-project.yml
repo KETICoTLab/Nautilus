@@ -1,10 +1,10 @@
 api_version: 3
 name: 
-description: NVIDIA FLARE sample project yaml file
+description: sample project yaml file
 
 participants:
   # change example.com to the FQDN of the server
-  - name: mylocalhost
+  - name: p-kr-prtest01-server
     type: server
     org: nvidia
     fed_learn_port: 8002
@@ -33,7 +33,7 @@ builders:
   - path: nvflare.lighter.impl.template.TemplateBuilder
   - path: nvflare.lighter.impl.static_file.StaticFileBuilder
     args:
-      # config_folder can be set to inform NVIDIA FLARE where to get configuration
+      # config_folder can be set to inform where to get configuration
       config_folder: config
 
       # scheme for communication driver (currently supporting the default, grpc, only).
@@ -59,7 +59,7 @@ builders:
         #
         overseer_exists: false
         args:
-          sp_end_point: mylocalhost:8002:8003
+          sp_end_point: p-kr-prtest01-server:8002:8003
 
   - path: nvflare.lighter.impl.cert.CertBuilder
   - path: nvflare.lighter.impl.signature.SignatureBuilder
