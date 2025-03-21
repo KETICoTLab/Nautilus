@@ -4,7 +4,7 @@
   become: yes  # Run tasks as root
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    local_tar_path: "../../images/nautilus-pv-updated.tar"
+    local_tar_path: "../../workspace/images/nautilus-pv-updated.tar"
     containerd_image_name: "nautilus-pv-updated:latest"
 
   handlers:
@@ -16,6 +16,9 @@
       set_fact:
         abs_tar_path: "{{ local_tar_path | realpath }}"
 
+    - name: Show local_tar_path
+      debug:
+        msg: "{{ abs_tar_path }}"
     # -------------------------------
     # Load Image into containerd
     # -------------------------------
