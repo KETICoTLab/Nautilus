@@ -317,7 +317,7 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                         client.V1Container(
                             name=f"{project_id}-site-{site}",
                             image=image,
-                            image_pull_policy="IfNotPresent",
+                            image_pull_policy="Never",
                             resources=client.V1ResourceRequirements(
                                 limits=limits,
                                 requests=requests
@@ -383,7 +383,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                         client.V1Container(
                             name=f"server",
                             image=image,
-                            image_pull_policy="IfNotPresent",
+                            image_pull_policy="Never",
                             resources=client.V1ResourceRequirements(
                                 limits=limits,
                                 requests=requests

@@ -4,7 +4,7 @@
   become: yes  # Run tasks as root
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    local_tar_path: "/tmp/nautilus-pv-updated.tar"
+    local_tar_path: "../../images/nautilus-pv-updated.tar"
     containerd_image_name: "nautilus-pv-updated:latest"
 
   handlers:
@@ -12,6 +12,10 @@
       command: sysctl --system
 
   tasks:
+    - name: Convert local_tar_path to absolute path
+      set_fact:
+        abs_tar_path: "{{ local_tar_path | realpath }}"
+
     # -------------------------------
     # Load Image into containerd
     # -------------------------------
@@ -25,8 +29,12 @@
       when: image_check.stdout != ""
 
     - name: Load the image into containerd
-      command: ctr -n k8s.io images import {{ local_tar_path }}
+      command: ctr -n k8s.io images import {{ abs_tar_path }}
       register: import_result
+
+    - name: Show containerd import command
+      debug:
+        msg: "ctr -n k8s.io images import {{ abs_tar_path }}"
 
     - name: Show containerd import result
       debug:
