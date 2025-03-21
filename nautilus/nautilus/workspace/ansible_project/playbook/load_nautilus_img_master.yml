@@ -4,7 +4,7 @@
   become: yes  # Run tasks as root
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    local_tar_path: "../../workspace/images/nautilus-pv-updated.tar"
+    local_tar_path: "{{ playbook_dir }}/../../../../workspace/images/nautilus-pv-updated.tar"
     containerd_image_name: "nautilus-pv-updated:latest"
 
   handlers:
@@ -19,6 +19,7 @@
     - name: Show local_tar_path
       debug:
         msg: "{{ abs_tar_path }}"
+        
     # -------------------------------
     # Load Image into containerd
     # -------------------------------
@@ -35,7 +36,7 @@
       command: ctr -n k8s.io images import {{ abs_tar_path }}
       register: import_result
 
-    - name: Show containerd import command
+    - name: [master] Show containerd import command
       debug:
         msg: "ctr -n k8s.io images import {{ abs_tar_path }}"
 

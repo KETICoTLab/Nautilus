@@ -31,6 +31,7 @@
       stat:
         path: "{{ local_tar_path }}"
       register: tar_file_stat
+
     - name: Fail if tar file is missing or empty
       fail:
         msg: "Error: The file {{ local_tar_path }} was not downloaded correctly!"
@@ -48,7 +49,7 @@
       command: "ctr -n k8s.io images remove {{ containerd_image_name }}"
       when: image_check.stdout != ""
 
-    - name: Load the image into containerd
+    - name: [worker] Load the image into containerd
       command: ctr -n k8s.io images import {{ local_tar_path }}
       register: import_result
 
