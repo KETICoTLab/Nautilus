@@ -269,12 +269,22 @@
   - name: Save join command
     copy:
       content: "{{ join_command.stdout }}"
-      dest: ../../scripts/kubeadm-join.sh
+      dest: "{{ playbook_dir }}/../../scripts/kubeadm-join.sh"
       mode: "0755"
 
   - name: Show join command for worker nodes
     debug:
       msg: "{{ join_command.stdout }}"
+
+  - name: Check if kubeadm-join.sh exists
+    stat:
+      path: "{{ playbook_dir }}/../../scripts/kubeadm-join.sh"
+    register: join_script_stat
+
+  - name: Confirm join script was created
+    debug:
+      msg: "Join script created at: {{ playbook_dir }}/../../scripts/kubeadm-join.sh"
+    when: join_script_stat.stat.exists
 
   - name: Remove NoSchedule taint from master node
     command: >
