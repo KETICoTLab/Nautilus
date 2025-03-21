@@ -114,10 +114,10 @@ def apply_nautilus_deployment(project_id: str, site: int, node_name: str, who: s
 
     if who == "client":
         print(f"create_client_deployment ing..")
-        create_client_deployment(project_id, site, node_name)
+        create_client_deployment(project_id, site, node_name, use_gpu=False)
     elif who == "server":
         print(f"create_server_deployment ing..")
-        create_server_deployment(project_id, node_name)
+        create_server_deployment(project_id, node_name, use_gpu=False)
     else:
         raise ValueError("Invalid value for 'who'. Must be either 'client' or 'server'.")
           

@@ -41,7 +41,27 @@ apps_v1 = client.AppsV1Api()
 batch_v1 = client.BatchV1Api()
 storage_v1 = client.StorageV1Api()
 
-# --- Kubernetes 리소스 조회 함수들 --- #
+'# --- Kubernetes 리소스 조회 함수들 --- #
+def node_has_gpu(node_name: str) -> bool:
+    """
+    해당 노드가 GPU(nvidia.com/gpu)를 보유하고 있는지 확인
+    예제)
+    use_gpu = node_has_gpu("w-kr-pr-test03")
+    create_client_deployment(
+        project_id="p-kr-prtest09",
+        site=1,
+        node_name="w-kr-pr-test03",
+        use_gpu=use_gpu
+    )
+    """
+    try:
+        node = v1.read_node(name=node_name)
+        allocatable = node.status.allocatable or {}
+        gpu_count = allocatable.get("nvidia.com/gpu", "0")
+        return int(gpu_count) > 0
+    except Exception as e:
+        print(f"⚠️ Failed to check GPU for node '{node_name}': {e}")
+        return False
 
 def list_daemon_set_for_all_namespace():
     """모든 네임스페이스에서 DaemonSet 목록 조회"""
@@ -162,13 +182,15 @@ def get_pod_name_by_deployment(namespace: str, deployment_name: str):
     # 해당 Deployment의 Pod 목록 조회
     pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector=f"app={namespace}")
     for pod in pod_list.items:
-        print(f"\n\n\n\n[just print] {deployment_name} for pod in pod_list.items: {pod.metadata.name}\n\n\n\n")
+        print(f"\n\n[just print] {deployment_name} for pod in pod_list.items: {pod.metadata.name}\n\n")
 
     for pod in pod_list.items:
         print(f"for pod in pod_list.items: {pod.metadata.name}")
         if pod.metadata.name.startswith(deployment_name):
+            print(f"\n\n[return] {deployment_name} pod.metadata.name: {pod.metadata.name}\n\n")
             return pod.metadata.name  # 가장 먼저 찾은 Pod 반환
-
+    
+    print(f"\n\n[Return] NONE\n\n")
     return None  # Pod를 찾지 못한 경우
 
 def list_pods_by_deployment(namespace: str, deployment_name: str):
@@ -256,8 +278,23 @@ def create_deployment(namespace: str, name: str, image: str, replicas: int = 1, 
     except client.ApiException as e:
         print(f"❌ Deployment creation failed: {e}")
 
-def create_client_deployment(project_id: str ,site: int, node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1):
-    """Deployment 생성"""
+def create_client_deployment(project_id: str ,site: int, node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1, use_gpu: bool = True):
+    """Client용 Deployment 생성 함수 (GPU 사용 여부 선택 가능)"""
+
+    # 리소스 설정 분기
+    limits = {
+        "memory": "8Gi",
+        "cpu": "4"
+    }
+    requests = {
+        "memory": "4Gi",
+        "cpu": "2"
+    }
+
+    if use_gpu:
+        limits["nvidia.com/gpu"] = "1"
+        requests["nvidia.com/gpu"] = "1"
+
     deployment = client.V1Deployment(
         api_version="apps/v1",
         kind="Deployment",
@@ -275,27 +312,20 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
                     labels={"app": namespace}
                 ),
                 spec=client.V1PodSpec(
-                    node_selector={"kubernetes.io/hostname": node_name}, 
+                    node_selector={"kubernetes.io/hostname": node_name},
                     containers=[
                         client.V1Container(
                             name=f"{project_id}-site-{site}",
                             image=image,
                             image_pull_policy="Never",
                             resources=client.V1ResourceRequirements(
-                                limits={
-                                    "memory": "8Gi",
-                                    "cpu": "4",
-                                    "nvidia.com/gpu": "1"
-                                },
-                                requests={
-                                    "memory": "4Gi",
-                                    "cpu": "2"
-                                }
+                                limits=limits,
+                                requests=requests
                             ),
                             args=[
                                 "-u", "-m", "nvflare.private.fed.app.client.client_train",
                                 "-m", f"/workspace/nvfl/{project_id}-site-{site}", "-s", "fed_client.json",
-                                "--set", "secure_train=true", f"uid={project_id}-site-{site}", 
+                                "--set", "secure_train=true", f"uid={project_id}-site-{site}",
                                 "config_folder=config", "org=nvidia"
                             ],
                             command=["/bin/bash", "-c", f"pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision && /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/site-{site}/startup/sub_start.sh"]
@@ -308,17 +338,29 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
 
     # Create the Deployment in the cluster
     api_instance = client.AppsV1Api()
-    namespace = namespace  # Change if deploying to a different namespace
 
     try:
         api_instance.create_namespaced_deployment(namespace=namespace, body=deployment)
-        print("Deployment created successfully!")
+        print("✅ Deployment created successfully!")
     except client.exceptions.ApiException as e:
-        print(f"Exception when creating deployment: {e}")
+        print(f"❌ Exception when creating deployment: {e}")
 
+def create_server_deployment(project_id: str , node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1, use_gpu: bool = True):
+    """Deployment 생성 (role 없이 node_name 기반으로 배포, GPU 사용 여부 선택 가능)"""
 
-def create_server_deployment(project_id: str , node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1):
-    """Deployment 생성 (role 없이 node_name 기반으로 배포)"""
+    # 리소스 설정 분기
+    limits = {
+        "memory": "8Gi",
+        "cpu": "4"
+    }
+    requests = {
+        "memory": "4Gi",
+        "cpu": "2"
+    }
+
+    if use_gpu:
+        limits["nvidia.com/gpu"] = "1"
+        requests["nvidia.com/gpu"] = "1"
     deployment = client.V1Deployment(
         api_version="apps/v1",
         kind="Deployment",
@@ -343,15 +385,8 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
                             image=image,
                             image_pull_policy="Never",
                             resources=client.V1ResourceRequirements(
-                                limits={
-                                    "memory": "8Gi",
-                                    "cpu": "4",
-                                    "nvidia.com/gpu": "1"
-                                },
-                                requests={
-                                    "memory": "4Gi",
-                                    "cpu": "2"
-                                }
+                                limits=limits,
+                                requests=requests
                             ),
                             args=[
                                 "-u", "-m", "nvflare.private.fed.app.server.server_train",

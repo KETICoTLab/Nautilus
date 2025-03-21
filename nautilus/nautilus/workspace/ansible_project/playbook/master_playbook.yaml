@@ -253,6 +253,15 @@
   - name: Deploy network plugin (Calico)
     shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
+  - name: Create ClusterRoleBinding for all worker nodes (system:nodes group)
+    command: >
+      kubectl create clusterrolebinding kubeadm:system-nodes
+      --clusterrole=system:node
+      --group=system:nodes
+    register: rbac_all_nodes_result
+    failed_when: "'AlreadyExists' not in rbac_all_nodes_result.stderr and rbac_all_nodes_result.rc != 0"
+    changed_when: "'AlreadyExists' not in rbac_all_nodes_result.stderr"
+
   - name: Retrieve join command for worker nodes
     shell: kubeadm token create --print-join-command
     register: join_command
