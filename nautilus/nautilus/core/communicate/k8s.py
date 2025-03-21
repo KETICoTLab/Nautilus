@@ -41,7 +41,7 @@ apps_v1 = client.AppsV1Api()
 batch_v1 = client.BatchV1Api()
 storage_v1 = client.StorageV1Api()
 
-'# --- Kubernetes 리소스 조회 함수들 --- #
+# --- Kubernetes 리소스 조회 함수들 --- #
 def node_has_gpu(node_name: str) -> bool:
     """
     해당 노드가 GPU(nvidia.com/gpu)를 보유하고 있는지 확인
