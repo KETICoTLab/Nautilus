@@ -25,7 +25,7 @@ $ source bin/activate
 (nautilus-env) $ sudo apt install git
 (nautilus-env) $ git clone https://github.com/KETICoTLab/Nautilus.git
 (nautilus-env) $ chmod +x ./Nautilus/setup.sh
-(nautilus-env) $ sudo ./Nautilus/setup.sh
+(nautilus-env) $ ./Nautilus/setup.sh
 ```
 
 ### Start nautilus\_server
