@@ -23,12 +23,12 @@ from .minio_storage import pull_pv_image_tar_from_minio
     #  - nvflare namespace 에 client deployment 실행
     # 2. train.py 파일 컨테이너로 복사
     # 3. simulation exec 명령어 날리기
-def run_join_playbook(target_host, data_provider_id):
+def run_join_playbook(target_host, data_provider_id, master_node_ip):
   print(f"validation.py - run_join_playbook) target host: {target_host}")
   script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/scripts/join_worker_node.sh"))
 
   # ✅ `subprocess.Popen`을 사용하여 실시간 로그 출력
-  command = ["bash", script_path, target_host, data_provider_id]
+  command = ["bash", script_path, target_host, data_provider_id, master_node_ip]
   process = subprocess.Popen(
       command,
       stdout=subprocess.PIPE,
