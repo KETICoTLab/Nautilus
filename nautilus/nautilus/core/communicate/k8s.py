@@ -2,6 +2,8 @@ from kubernetes import client, config
 from typing import Optional
 import subprocess
 import shlex
+from kubernetes.stream import stream
+
 # def get_kubernetes_nodes():
 #     # Kubernetes 클라이언트 구성을 로드합니다 (로컬 kubeconfig 파일 사용)
 #     config.load_kube_config()
@@ -414,8 +416,8 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
 
 # --- Kubernetes 실행 함수들 --- #
 def connect_get_namespaced_pod_exec(namespace: str, pod_name: str, command: str):
-    """특정 Pod에서 명령어 실행"""
-    return v1.connect_get_namespaced_pod_exec(
+    return stream(
+        v1.connect_get_namespaced_pod_exec,
         name=pod_name,
         namespace=namespace,
         command=shlex.split(command),
@@ -424,7 +426,7 @@ def connect_get_namespaced_pod_exec(namespace: str, pod_name: str, command: str)
         stdout=True,
         tty=False
     )
-
+    
 def connect_get_namespaced_pod_portforward(namespace: str, pod_name: str, ports: list):
     """Pod의 포트를 포트포워딩"""
     return v1.connect_get_namespaced_pod_portforward(pod_name, namespace, ports=ports)
