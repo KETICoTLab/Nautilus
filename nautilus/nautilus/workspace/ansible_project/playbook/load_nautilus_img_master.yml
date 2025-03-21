@@ -4,7 +4,7 @@
   become: yes  # Run tasks as root
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    local_tar_path: "{{ playbook_dir }}/../../../../workspace/images/nautilus-pv-updated.tar"
+    local_tar_path: "{{ playbook_dir }}/../../../workspace/images/nautilus-pv-updated.tar"
     containerd_image_name: "nautilus-pv-updated:latest"
 
   handlers:
