@@ -94,7 +94,20 @@ async def delete_data_provider(data_provider_id: str, pool) -> bool:
 async def list_data_providers(pool) -> List[DataProvider]:
     query = "SELECT * FROM data_providers;"
     rows = await fetch_all(pool, query)
-    return [DataProvider(**row) for row in rows]
+    providers = []
+
+    for row in rows:
+        data = dict(row)
+
+        # asyncpg에서 JSONB 필드를 문자열로 반환한 경우 처리
+        if isinstance(data.get("host_information"), str):
+            try:
+                data["host_information"] = json.loads(data["host_information"])
+            except json.JSONDecodeError:
+                raise ValueError("Invalid JSON format in host_information")
+
+        providers.append(DataProvider(**data))
+    return providers
 
 
 async def create_data_provider_data(data_provider_id: str, data: DataProviderDataCreate, pool) -> DataProviderData:
