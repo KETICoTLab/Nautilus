@@ -1,4 +1,4 @@
 projectId: my_project
 image: nautilus-pv-updated:latest
-mountPath: /mnt/nvflare_nautilus
+mountPath: ~/Nautilus
 numClients: 4
