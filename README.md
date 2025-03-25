@@ -34,3 +34,9 @@ $ source bin/activate
 (nautilus-env) $ cd Nautilus/nautilus/nautilus_server/
 (nautilus-env) $ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+### helm install
+```
+helm install nautilus-helm ./nautilus-helm \
+  --set projectId=my_project,numClients=4
+```

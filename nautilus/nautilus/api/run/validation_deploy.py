@@ -46,6 +46,7 @@ def main(config_name):
     print(f"Starting Nautilus Deployment for Project: {project_id}")
     load_nautilus_image("localhost")
     print(f"master load_nautilus_image done..")
+'''    
     server_pod_name = f"{project_id}-server" 
     apply_nautilus_deployment(project_id=project_id, site="none", node_name="master-node", who="server")
 
@@ -80,8 +81,8 @@ def main(config_name):
     server_pod_full_name = get_pod_name_by_deployment(namespace, server_pod_name)
     command = "python3 /workspace/nautilus/nautilus/api/contrib/simulation_run.py"
     execute_command(pod_name=server_pod_full_name, command=command, namespace=namespace)
-
     print("All deployments completed successfully!")
+'''
 
 
 if __name__ == "__main__":

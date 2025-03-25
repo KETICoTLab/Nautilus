@@ -62,7 +62,7 @@ def handle_provision(args):
 
     # main project file
     project_file = args.project_file
-    current_project_yml = "/workspace/nautilus/nautilus/workspace/provision/project.yml"
+    current_project_yml = "/home/cotlab/Nautilus/nautilus/nautilus/workspace/provision/project.yml"
 
     if has_no_arguments() and not os.path.exists(current_project_yml):
         files = {"1": "ha_project.yml", "2": "dummy_project.yml", "3": None}
@@ -91,12 +91,12 @@ def handle_provision(args):
     project_full_path = project_file
     
     ### local space
-    # workspace_full_path = "/home/cotlab/workspace/nautilus/nautilus/workspace/provision"
-    # project_full_path = "/home/cotlab/workspace/nautilus/nautilus/workspace/provision/project.yml"
+    workspace_full_path = "/home/cotlab/Nautilus/nautilus/nautilus/workspace/provision"
+    project_full_path = "/home/cotlab/Nautilus/nautilus/nautilus/workspace/provision/project.yml"
     
     ### docker container space
-    workspace_full_path = "/workspace/nautilus/nautilus/workspace/provision"
-    project_full_path = "/workspace/nautilus/nautilus/workspace/provision/project.yml"
+    #workspace_full_path = "/workspace/nautilus/nautilus/workspace/provision"
+    #project_full_path = "/workspace/nautilus/nautilus/workspace/provision/project.yml"
     print(f"Project yaml file: {project_full_path}.")
     """
     /workspace/nautilus/nautilus/api/etc# python nt_provision.py --workspace "/workspace/nautilus/nautilus/api/etc/provisioning" --project_file "/workspace/nautilus/nautilus/api/etc/provisioning/project.yml"

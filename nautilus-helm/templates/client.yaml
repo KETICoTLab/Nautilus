@@ -1,0 +1,29 @@
+{{- define "add1" -}}
+{{ add . 1 }}
+{{- end }}
+
+{{- range $i := until (.Values.numClients | int) }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nvflare-client-{{ include "add1" $i }}
+spec:
+  containers:
+  - name: client
+    image: {{ $.Values.image }}
+    command: ["/bin/bash", "-c"]
+    args:
+      - >
+        pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision &&
+        /workspace/nautilus/nautilus/workspace/provision/{{ $.Values.projectId }}/prod_00/site-{{ include "add1" $i }}/startup/sub_start.sh
+    volumeMounts:
+    - name: nvflare-startup
+      mountPath: /workspace/nautilus
+  restartPolicy: Never
+  volumes:
+  - name: nvflare-startup
+    hostPath:
+      path: {{ $.Values.mountPath }}
+      type: Directory
+---
+{{- end }}

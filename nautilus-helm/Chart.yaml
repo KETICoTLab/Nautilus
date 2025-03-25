@@ -1,0 +1,5 @@
+apiVersion: v2
+name: nautilus-helm
+description: A Helm chart to deploy NVFlare server and clients on Kubernetes
+version: 0.1.0
+appVersion: 1.0

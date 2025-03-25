@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mylocalhost
+  labels:
+    app: mylocalhost
+spec:
+  containers:
+  - name: server
+    image: {{ .Values.image }}
+    command: ["/bin/bash", "-c"]
+    args:
+      - >
+        pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision &&
+        /workspace/nautilus/nautilus/workspace/provision/{{ .Values.projectId }}/prod_00/mylocalhost/startup/sub_start.sh
+    ports:
+      - containerPort: 8002
+      - containerPort: 8003
+    volumeMounts:
+    - name: nvflare-startup
+      mountPath: /workspace/nautilus
+  restartPolicy: Never
+  volumes:
+  - name: nvflare-startup
+    hostPath:
+      path: {{ .Values.mountPath }}
+      type: Directory
