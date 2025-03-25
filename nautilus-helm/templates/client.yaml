@@ -8,9 +8,12 @@ kind: Pod
 metadata:
   name: nvflare-client-{{ include "add1" $i }}
 spec:
+  nodeSelector:
+    kubernetes.io/hostname: master-node
   containers:
   - name: client
     image: {{ $.Values.image }}
+    imagePullPolicy: IfNotPresent
     command: ["/bin/bash", "-c"]
     args:
       - >

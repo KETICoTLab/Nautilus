@@ -5,9 +5,12 @@ metadata:
   labels:
     app: mylocalhost
 spec:
+  nodeSelector:
+    kubernetes.io/hostname: master-node
   containers:
   - name: server
     image: {{ .Values.image }}
+    imagePullPolicy: IfNotPresent
     command: ["/bin/bash", "-c"]
     args:
       - >
