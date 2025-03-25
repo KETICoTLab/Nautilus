@@ -69,7 +69,7 @@ def generate_project_yaml(project_id):
     project_id = config.get("project_id", "")
     
     # name 값 업데이트
-    origin_yaml["name"] = project_id
+    #origin_yaml["name"] = project_id
     
     # 기존 participants 리스트 복사
     new_participants = []

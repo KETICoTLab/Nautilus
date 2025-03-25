@@ -22,6 +22,7 @@
 
     # -------------------------------
     # Load Image into containerd
+    # ctr -n k8s.io images import /home/cotlab/nautilus-env/Nautilus/nautilus/nautilus/workspace/images/nautilus-pv-updated.tar
     # -------------------------------
     - name: Check if image exists in containerd
       shell: "ctr -n k8s.io images list | grep '{{ containerd_image_name }}' || true"
