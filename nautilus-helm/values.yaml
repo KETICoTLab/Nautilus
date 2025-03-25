@@ -1,4 +1,4 @@
-projectId: my_project
+projectId: p-kr-fl-project
 image: nautilus-pv-updated:latest
 mountPath: /tmp/Nautilus
 numClients: 4
