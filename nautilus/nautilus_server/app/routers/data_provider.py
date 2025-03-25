@@ -35,7 +35,6 @@ async def delete_data_provider(data_provider_id: str, pool=Depends(get_db_pool))
 async def list_data_providers(pool=Depends(get_db_pool)):
     return await service.list_data_providers(pool)
 
-
 @router.post("/{data_provider_id}/datas", response_model=DataProviderData)
 async def create_data_provider_data(data_provider_id: str, data: DataProviderDataCreate, pool=Depends(get_db_pool)):
     return await service.create_data_provider_data(data_provider_id, data, pool)
@@ -46,6 +45,10 @@ async def get_data_provider_data(data_provider_id: str, data_id: str):
     if not dp:
         raise HTTPException(status_code=404, detail="Data Provider Not Found")
     return dp
+
+@router.get("/{data_provider_id}/datas", response_model=List[DataProvider])
+async def list_data_providers(pool=Depends(get_db_pool)):
+    return await service.list_data_provider_data(pool)
 
 @router.delete("/{data_provider_id}/datas/{data_id}")
 async def delete_data_provider_data(data_provider_id: str, data_id: str):

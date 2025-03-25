@@ -127,6 +127,12 @@ async def get_data_provider_data(data_provider_id: str, data_id: str, pool) -> O
     row = await fetch_one(pool, query, data_provider_id)
     return DataProviderData(**row) if row else None
 
+async def list_data_provider_data(pool) -> List[DataProvider]:
+    query = "SELECT * FROM data;"
+    rows = await fetch_all(pool, query)
+
+    return rows
+
 async def delete_data_provider_data(data_provider_id: str, data_id: str, pool) -> bool:
     query = "DELETE FROM data WHERE data_provider_id = $1 and data_id = $2;"
     result = await execute(pool, query, data_provider_id)
