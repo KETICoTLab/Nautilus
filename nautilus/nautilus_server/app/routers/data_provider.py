@@ -11,29 +11,29 @@ async def create_data_provider(data: DataProviderCreate, pool=Depends(get_db_poo
     return await service.create_data_provider(data, pool)
 
 @router.get("/{data_provider_id}", response_model=DataProvider)
-async def get_data_provider(data_provider_id: str):
-    dp = await service.get_data_provider(data_provider_id)
+async def get_data_provider(data_provider_id: str, pool=Depends(get_db_pool)):
+    dp = await service.get_data_provider(data_provider_id, pool)
     if not dp:
         raise HTTPException(status_code=404, detail="Data Provider Not Found")
     return dp
 
 @router.patch("/{data_provider_id}", response_model=DataProvider)
-async def update_data_provider(data_provider_id: str, data: DataProviderCreate):
-    dp = await service.update_data_provider(data_provider_id, data)
+async def update_data_provider(data_provider_id: str, data: DataProviderCreate, pool=Depends(get_db_pool)):
+    dp = await service.update_data_provider(data_provider_id, data, pool)
     if not dp:
         raise HTTPException(status_code=404, detail="Data Provider Not Found")
     return dp
 
 @router.delete("/{data_provider_id}")
-async def delete_data_provider(data_provider_id: str):
-    success = await service.delete_data_provider(data_provider_id)
+async def delete_data_provider(data_provider_id: str, pool=Depends(get_db_pool)):
+    success = await service.delete_data_provider(data_provider_id, pool)
     if not success:
         raise HTTPException(status_code=404, detail="Data Provider Not Found")
     return {"detail": "Deleted successfully"}
 
 @router.get("", response_model=List[DataProvider])
-async def list_data_providers():
-    return await service.list_data_providers()
+async def list_data_providers(pool=Depends(get_db_pool)):
+    return await service.list_data_providers(pool)
 
 
 @router.post("/{data_provider_id}/datas", response_model=DataProviderData)

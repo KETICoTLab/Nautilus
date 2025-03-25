@@ -71,12 +71,12 @@ ansible_ssh_password: "{password}"
     run_join_playbook(ip_address, str(data_provider_id), str("master_node_ip"))#master pc ip적어줘야 함.
     
     
-async def get_data_provider(data_provider_id: str) -> Optional[DataProvider]:
+async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProvider]:
     query = "SELECT * FROM data_providers WHERE data_provider_id = $1;"
     row = await fetch_one(pool, query, data_provider_id)
     return DataProvider(**row) if row else None
 
-async def update_data_provider(data_provider_id: str, data: DataProviderCreate) -> Optional[DataProvider]:
+async def update_data_provider(data_provider_id: str, data: DataProviderCreate, pool) -> Optional[DataProvider]:
     query = """
     UPDATE data_providers
     SET data_provider_name = $1, description = $2, tags = $3, creator_id = $4, host_information = $5, train_code_path = $6, train_data_path = $7, modification_time = NOW()
@@ -86,12 +86,12 @@ async def update_data_provider(data_provider_id: str, data: DataProviderCreate) 
     row = await fetch_one(pool, query, data.data_provider_name, data.description, data.tags, data.creator_id, data.host_information, data.train_code_path, data.train_data_path, data_provider_id)
     return DataProvider(**row) if row else None
 
-async def delete_data_provider(data_provider_id: str) -> bool:
+async def delete_data_provider(data_provider_id: str, pool) -> bool:
     query = "DELETE FROM data_providers WHERE data_provider_id = $1;"
     result = await execute(pool, query, data_provider_id)
     return result.endswith("DELETE 1")
 
-async def list_data_providers() -> List[DataProvider]:
+async def list_data_providers(pool) -> List[DataProvider]:
     query = "SELECT * FROM data_providers;"
     rows = await fetch_all(pool, query)
     return [DataProvider(**row) for row in rows]
@@ -109,12 +109,12 @@ async def create_data_provider_data(data_provider_id: str, data: DataProviderDat
     row = await fetch_one(pool, query, data_id, data_provider_id, data.item_code_id, data.data_name, data.description, creation_time, data.data)
     return DataProviderData(**row)
 
-async def get_data_provider_data(data_provider_id: str, data_id: str) -> Optional[DataProviderData]:
+async def get_data_provider_data(data_provider_id: str, data_id: str, pool) -> Optional[DataProviderData]:
     query = "SELECT * FROM data WHERE data_provider_id = $1 and data_id = $2;"
     row = await fetch_one(pool, query, data_provider_id)
     return DataProviderData(**row) if row else None
 
-async def delete_data_provider_data(data_provider_id: str, data_id: str) -> bool:
+async def delete_data_provider_data(data_provider_id: str, data_id: str, pool) -> bool:
     query = "DELETE FROM data WHERE data_provider_id = $1 and data_id = $2;"
     result = await execute(pool, query, data_provider_id)
     return result.endswith("DELETE 1")
