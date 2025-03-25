@@ -4,7 +4,7 @@ description: sample project yaml file
 
 participants:
   # change example.com to the FQDN of the server
-  - name: p-kr-prtest01-server
+  - name: mylocalhost
     type: server
     org: nvidia
     fed_learn_port: 8002
@@ -59,7 +59,7 @@ builders:
         #
         overseer_exists: false
         args:
-          sp_end_point: p-kr-prtest01-server:8002:8003
+          sp_end_point: mylocalhost:8002:8003
 
   - path: nvflare.lighter.impl.cert.CertBuilder
   - path: nvflare.lighter.impl.signature.SignatureBuilder
