@@ -7,6 +7,10 @@ metadata:
 spec:
   nodeSelector:
     kubernetes.io/hostname: master-node
+  tolerations:
+    - key: "node.kubernetes.io/disk-pressure"
+      operator: "Exists"
+      effect: "NoSchedule"
   containers:
   - name: server
     image: {{ .Values.image }}
