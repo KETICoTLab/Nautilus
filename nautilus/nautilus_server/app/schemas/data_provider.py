@@ -31,17 +31,18 @@ class DataProvider(DataProviderBase):
 class DataProviderDataBase(BaseModel):
     item_code_id: str
     data_name: str
-    description: str
+    description: Optional[str] = None
     data: Optional[str] = None
 
 class DataProviderDataCreate(DataProviderDataBase):
     pass
 
+
 class DataProviderData(DataProviderDataBase):
     data_id: str
+    data_provider: Optional[DataProvider] = None 
 
     model_config = {
-        "from_attributes": True,  # Pydantic v2에서는 `orm_mode = True` 대신 사용
-        "arbitrary_types_allowed": True  # 사용자 정의 타입 허용
+        "from_attributes": True,
+        "arbitrary_types_allowed": True
     }
-

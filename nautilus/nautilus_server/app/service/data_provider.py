@@ -1,5 +1,5 @@
 from typing import List, Optional
-from app.schemas.data_provider import DataProviderCreate, DataProvider , DataProviderDataCreate, DataProviderData
+from app.schemas.data_provider import DataProviderCreate, DataProvider , DataProviderDataCreate, DataProviderData, HostInformation
 from app.service.base import fetch_one, fetch_all, execute
 from datetime import datetime, timezone
 import json
@@ -127,11 +127,68 @@ async def get_data_provider_data(data_provider_id: str, data_id: str, pool) -> O
     row = await fetch_one(pool, query, data_provider_id)
     return DataProviderData(**row) if row else None
 
-async def list_data_provider_data(pool) -> List[DataProvider]:
-    query = "SELECT * FROM data;"
+async def list_data_provider_data(pool) -> List[DataProviderData]:
+    query = """
+        SELECT data_id, item_code_id, data_name, description, data
+        FROM data;
+    """
     rows = await fetch_all(pool, query)
 
-    return rows
+    return [DataProviderData(**dict(row)) for row in rows]
+
+
+async def list_data_provider_data_all(pool) -> List[DataProviderData]:
+    query = """
+    SELECT
+        d.data_id,
+        d.data_provider_id,
+        d.item_code_id,
+        d.data_name,
+        d.description,
+        d.data,
+
+        dp.data_provider_id,
+        dp.data_provider_name,
+        dp.description AS provider_description,
+        dp.tags,
+        dp.creator_id,
+        dp.host_information,
+        dp.train_code_path,
+        dp.train_data_path
+
+    FROM data d
+    JOIN data_providers dp
+      ON d.data_provider_id = dp.data_provider_id;
+    """
+    rows = await fetch_all(pool, query)
+
+    result = []
+    for row in rows:
+        row_dict = dict(row)
+
+        data_provider = DataProvider(
+            data_provider_id=row_dict["data_provider_id"],
+            data_provider_name=row_dict["data_provider_name"],
+            description=row_dict["provider_description"],
+            tags=row_dict["tags"],
+            creator_id=row_dict["creator_id"],
+            host_information=HostInformation(**json.loads(row_dict["host_information"])),
+            train_code_path=row_dict["train_code_path"],
+            train_data_path=row_dict["train_data_path"]
+        )
+
+        data = DataProviderData(
+            data_id=row_dict["data_id"],
+            item_code_id=row_dict["item_code_id"],
+            data_name=row_dict["data_name"],
+            description=row_dict["description"],
+            data=row_dict["data"],
+            data_provider=data_provider  # ✅ 중첩 객체 포함
+        )
+
+        result.append(data)
+
+    return result
 
 async def delete_data_provider_data(data_provider_id: str, data_id: str, pool) -> bool:
     query = "DELETE FROM data WHERE data_provider_id = $1 and data_id = $2;"

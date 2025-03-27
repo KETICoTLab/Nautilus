@@ -24,7 +24,7 @@ async def create_result(data, pool):
     )
 
 async def get_result(pool):
-    query = "SELECT result_id, data, creation_time FROM results;"
+    query = "SELECT result_id, data, creation_time FROM results ORDER BY creation_time DESC;"
     rows = await fetch_all(pool, query)
 
     # ✅ 데이터를 FastAPI의 `Result` 모델에 맞게 변환
