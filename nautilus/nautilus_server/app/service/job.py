@@ -30,15 +30,6 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     # ✅ export_job.py 실행 (simulation version)
     create_job_script = Path("../nautilus/api/contrib/export_job.py").resolve()  # 절대 경로 변환
     create_job_command = ["python3", str(create_job_script)]
-    
-    # ✅ run_deploy_job.py 실행 
-    deploy_job_script = Path("../nautilus/api/run/run_deploy_job.py").resolve()  # 절대 경로 변환
-    deploy_job_command = [
-        "python3", str(deploy_job_script),
-        "--config_path", f"{project_id}_config.json",
-        "--job_id", job_id
-    ]
-
     print(f"🟢 Running create_job_script: {create_job_command}")
 
     try:
@@ -59,25 +50,6 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
             return None  # 실패 시 중단
 
         print(f"✅ create_job.py finished successfully.")
-
-        # 🔹 Step 2: deploy_job 실행 (create_job 성공 후 실행)
-        print(f"🟢 Running deploy_job_script: {deploy_job_command}")
-        deploy_process = await asyncio.create_subprocess_exec(
-            *deploy_job_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-        stdout, stderr = await deploy_process.communicate()
-
-        print(f"[deploy_job.py LOG]: {stdout.decode().strip()}")
-        print(f"[deploy_job.py ERROR]: {stderr.decode().strip()}")
-
-        if deploy_process.returncode != 0:
-            print(f"❌ deploy_job.py failed with exit code {deploy_process.returncode}")
-            return None  # 실패 시 중단
-
-        print(f"✅ deploy_job.py finished successfully.")
 
     except Exception as e:
         print(f"❌ create_job failed: {e}")
@@ -147,16 +119,16 @@ async def exec_job(project_id: str, job_id: str):
 
         # * 표준 출력 및 오류 로그 실시간 출력
         for line in process.stdout:
-            print(f"[create_job.py LOG]: {line.strip()}")
+            print(f"[exec_job.py LOG]: {line.strip()}")
 
         for line in process.stderr:
-            print(f"[create_job.py ERROR]: {line.strip()}")
+            print(f"[exec_job.py ERROR]: {line.strip()}")
 
         process.wait()  # * 프로세스 종료까지 대기
-        print(f"* create_job.py finished with exit code {process.returncode}")
+        print(f"* exec_job.py finished with exit code {process.returncode}")
 
     except Exception as e:
-        print(f"* create_job failed: {e}")
+        print(f"* exec_job failed: {e}")
 
 async def get_client_status(project_id: str, job_id: str, pool) -> Optional[Job]:
     query = """

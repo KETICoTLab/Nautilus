@@ -14,6 +14,11 @@ from nautilus.core.communicate.validation import (
 from nautilus.core.communicate.k8s import (
     get_pod_name_by_deployment
 )
+
+'''
+server측 pod에 직접 contrib/create_job.py 실행하면 배포 작업 필요 없이 job실행 가능
+
+'''
 def main(config_path, job_id):
     """Config 파일을 로드하여 Nautilus 배포 및 실행"""
     # Config 파일 로드
@@ -47,23 +52,6 @@ def main(config_path, job_id):
         type="folder"
     )
     
-    # client측 Job 폴더 배포
-    for i in range(number_of_client):
-        site = i + 1  # site-1, site-2, ... 순차 증가
-        pod_name = f"{project_id}-site-{site}"
-        pod_full_name = get_pod_name_by_deployment(namespace, pod_name)
-        print(f"Deploying Site-{site} | Pod: {pod_name} | pod_full_name: {pod_full_name}")
-
-        # job 폴더 복사
-        print(f"Starting copy_local_to_container")
-        copy_local_to_container(
-            pod_name=pod_full_name,
-            local_file_path=job_dir,
-            container_path=container_path,
-            namespace=namespace,
-            type="folder"
-        )
-
     print("All deployments completed successfully!")
 
 if __name__ == "__main__":
