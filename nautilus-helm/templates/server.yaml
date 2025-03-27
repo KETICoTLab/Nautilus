@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: mylocalhost
+  namespace: {{ .Values.namespace }}
   labels:
     app: mylocalhost
 spec:
