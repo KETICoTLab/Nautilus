@@ -28,7 +28,7 @@ def main(project_id, job_id):
     admin_startup_command = f"/workspace/nautilus/nautilus/workspace/provisioning/{project_id}/prod_00/admin@nvidia.com/startup/fl_admin.sh" 
     user_name_command = "admin@nvidia.com"
     submit_job_command = f"submit_job /workspace/nautilus/nautilus/workspace/jobs/{job_id}"
-    submit_command == f"{admin_startup_command} && {user_name_command} && {submit_job_command}"
+    submit_command = f"{admin_startup_command} && {user_name_command} && {submit_job_command}"
 
     print(f"Starting job execution on server: {submit_command}")
     
