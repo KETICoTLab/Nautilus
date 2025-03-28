@@ -36,7 +36,7 @@ def main(project_id, job_id):
     '''
     execute_command(pod_name=server_pod_full_name, command=submit_command)
     '''
-    execute_command(pod_name="mylocalhost", command=submit_command)
+    execute_command(pod_name="mylocalhost", command=submit_command, namespace="default")
 
     print("Job execution completed successfully!")
 
