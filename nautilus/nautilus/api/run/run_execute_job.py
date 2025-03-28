@@ -17,7 +17,7 @@ from nautilus.core.communicate.k8s import (
 )
 
 def run_nvflare_job_in_pod():
-    cmd = "kubectl exec -i mylocalhost -- /workspace/nautilus/nautilus/workspace/provisioning/p-kr-federated-learning-pj-01/prod_00/admin@nvidia.com/startup/fl_admin.sh"
+    cmd = "kubectl exec -i mylocalhost -- /workspace/nautilus/nautilus/workspace/provision/p-kr-federated-learning-pj-01/prod_00/admin@nvidia.com/startup/fl_admin.sh"
     child = pexpect.spawn(cmd, encoding='utf-8')
 
     child.expect("User Name:")
