@@ -4,6 +4,7 @@ import json
 import argparse
 import subprocess
 import sys
+import pexpect
 
 # 📌 ROOT_BASE_DIR `nautilus` 루트 디렉토리로 설정
 ROOT_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
@@ -14,6 +15,19 @@ from nautilus.core.communicate.validation import (
 from nautilus.core.communicate.k8s import (
     get_pod_name_by_deployment
 )
+
+def run_nvflare_job_in_pod():
+    cmd = "kubectl exec -i mylocalhost -- /workspace/nautilus/nautilus/workspace/provisioning/p-kr-federated-learning-pj-01/prod_00/admin@nvidia.com/startup/fl_admin.sh"
+    child = pexpect.spawn(cmd, encoding='utf-8')
+
+    child.expect("User Name:")
+    child.sendline("admin@nvidia.com")
+
+    child.expect(">")
+    child.sendline("submit_job /workspace/nautilus/nautilus/workspace/jobs/hello-pt_cifar10_fedavg")
+
+    child.expect("Done")
+    print(child.before)
 
 def main(project_id, job_id):
     pod_name = f"{project_id}-server"
@@ -36,7 +50,9 @@ def main(project_id, job_id):
     '''
     execute_command(pod_name=server_pod_full_name, command=submit_command)
     '''
-    execute_command(pod_name="mylocalhost", command=submit_command, namespace="default")
+    #execute_command(pod_name="mylocalhost", command=submit_command, namespace="default")
+    run_nvflare_job_in_pod()
+    
 
     print("Job execution completed successfully!")
 
