@@ -16,15 +16,16 @@ from nautilus.core.communicate.k8s import (
     get_pod_name_by_deployment
 )
 
-def run_nvflare_job_in_pod():
-    cmd = "kubectl exec -i mylocalhost -- /workspace/nautilus/nautilus/workspace/provision/p-kr-federated-learning-pj-01/prod_00/admin@nvidia.com/startup/fl_admin.sh"
+def run_nvflare_job_in_pod(pod_name: str, project_id: str, job_id: str):
+    cmd = f"kubectl exec -i {pod_name} -- /workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/admin@nvidia.com/startup/fl_admin.sh"
+    print(f"- Executing (cmd): {cmd}")
     child = pexpect.spawn(cmd, encoding='utf-8')
 
     child.expect("User Name:")
     child.sendline("admin@nvidia.com")
 
     child.expect(">")
-    child.sendline("submit_job /workspace/nautilus/nautilus/workspace/jobs/hello-pt_cifar10_fedavg")
+    child.sendline(f"submit_job /workspace/nautilus/nautilus/workspace/jobs/{job_id}")
 
     child.expect("Done")
     print(child.before)
@@ -37,23 +38,8 @@ def main(project_id, job_id):
     server_pod_full_name = get_pod_name_by_deployment(deployment_name=server_pod_name)
     print(f"Deploying Server | Pod: {server_pod_name} | pod_full_name: {server_pod_full_name}")    
     '''
-    # 실행할 명령어 정의
-    # 에러날 시 cd로 진입 후에 ./fl_admin.sh 로 실행
-    admin_startup_command = f"/workspace/nautilus/nautilus/workspace/provisioning/{project_id}/prod_00/admin@nvidia.com/startup/fl_admin.sh" 
-    user_name_command = "admin@nvidia.com"
-    submit_job_command = f"submit_job /workspace/nautilus/nautilus/workspace/jobs/{job_id}"
-    submit_command = f"{admin_startup_command} && {user_name_command} && {submit_job_command}"
-
-    print(f"Starting job execution on server: {submit_command}")
+    run_nvflare_job_in_pod(pod_name="mylocalhost", project_id=project_id, job_id=job_id)
     
-    print(f"- Executing (command): {submit_command}")
-    '''
-    execute_command(pod_name=server_pod_full_name, command=submit_command)
-    '''
-    #execute_command(pod_name="mylocalhost", command=submit_command, namespace="default")
-    run_nvflare_job_in_pod()
-    
-
     print("Job execution completed successfully!")
 
 if __name__ == "__main__":
