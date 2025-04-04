@@ -178,7 +178,7 @@ def list_namespaced_pod(namespace: str):
     """특정 네임스페이스에서 Pod 목록 조회"""
     return v1.list_namespaced_pod(namespace)
 
-def get_pod_name_by_deployment(namespace: str, deployment_name: str):
+def get_pod_name_by_deployment(deployment_name: str, namespace: str = "nautilus"):
     """Deployment가 생성한 Pod의 이름을 가져오는 함수"""
 
     # 해당 Deployment의 Pod 목록 조회
@@ -192,7 +192,7 @@ def get_pod_name_by_deployment(namespace: str, deployment_name: str):
     print(f"\n\n[Return] NONE\n\n")
     return None  # Pod를 찾지 못한 경우
 
-def list_pods_by_deployment(namespace: str, deployment_name: str):
+def list_pods_by_deployment(deployment_name: str, namespace: str = "nautilus"):
     """Deployment가 생성한 모든 Pod의 이름을 가져오는 함수"""
     config.load_kube_config()  # 쿠버네티스 클러스터 설정 로드
 
@@ -412,7 +412,20 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
 
 
 # --- Kubernetes 실행 함수들 --- #
+# def connect_get_namespaced_pod_exec(namespace: str, pod_name: str, command: str):
+#     return stream(
+#         v1.connect_get_namespaced_pod_exec,
+#         name=pod_name,
+#         namespace=namespace,
+#         command=shlex.split(command),
+#         stderr=True,
+#         stdin=False,
+#         stdout=True,
+#         tty=False
+#     )
+    
 def connect_get_namespaced_pod_exec(namespace: str, pod_name: str, command: str):
+    wrapped_command = ["/bin/bash", "-c", command]
     return stream(
         v1.connect_get_namespaced_pod_exec,
         name=pod_name,

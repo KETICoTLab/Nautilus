@@ -159,7 +159,7 @@ def execute_command(pod_name: str, command: str, namespace: str = "nautilus"):
   # pod_name = "" 
   # command = "" # simulation 실행 / job 실행 등 command 넣으면 됨
   print(f"execute_command: namespace: {namespace}, pod_name: {pod_name}, command: {command}")
-  output = connect_get_namespaced_pod_exec(namespace, pod_name, command)
+  output = connect_get_namespaced_pod_exec("default", pod_name, command)
   print("[Pod Output]:", output)
      
 #run_ansible_playbook()
