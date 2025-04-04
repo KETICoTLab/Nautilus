@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from typing import List, Optional
 from app.schemas.job import JobCreate, Job
 from app.database import pool
@@ -37,7 +38,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
 
     except Exception as e:
         print(f"❌ create_job failed: {e}")
-        return None  # 실패 시 중단
+        raise HTTPException(status_code=500, detail=str(e))
 
     # 🔹 Step 3: DB에 Job 정보 저장
     row = await fetch_one(
