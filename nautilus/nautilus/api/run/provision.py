@@ -24,19 +24,9 @@ from util.auto_save.utils import (
     generate_project_yaml,
     save_docker_image,
     upload_to_minio
-)
+    )
 
-def get_host_ip():
-    """Get the server's IP address."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))  # Google DNS 서버로 연결하여 IP 조회
-        ip_address = s.getsockname()[0]
-        s.close()
-        return ip_address
-    except Exception as e:
-        print(f"Failed to get host IP: {e}")
-        return "localhost"
+
 
 def deploy():
     """Execute the provision & deployment process."""
@@ -100,10 +90,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # 서버의 IP 주소 가져오기
-    host_ip = get_host_ip()
-
-    # "HOST": client측에서 post전송을 위한 정보
     config_data = {
         "project_id": args.project_id,
         "project_name": args.project_name,
@@ -111,8 +97,7 @@ if __name__ == "__main__":
         "target_hosts": [],
         "client_info": {},
         "client_list": [],
-        "nodes": [],
-        "HOST": f"http://{host_ip}:8000"
+        "nodes": []
     }
     
     # Save config as JSON

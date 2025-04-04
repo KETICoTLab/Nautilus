@@ -65,7 +65,7 @@ def parse_check_status_output(output: str) -> List[Dict[str, str]]:
 
 def check_client_status(project_id: str) -> List[Dict[str, str]]:
     #pod_name = f"{project_id}-server"
-    pod_name = mylocalhost
+    pod_name = "mylocalhost"
     raw_output = run_nvflare_job_in_pod(pod_name=pod_name, project_id=project_id)
     return parse_check_status_output(raw_output)
 
