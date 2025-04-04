@@ -74,7 +74,15 @@ ansible_ssh_password: "{password}"
 async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProvider]:
     query = "SELECT * FROM data_providers WHERE data_provider_id = $1;"
     row = await fetch_one(pool, query, data_provider_id)
-    return DataProvider(**row) if row else None
+
+    if not row:
+        return None
+    
+    row_dict = dict(row)
+    if isinstance(row_dict.get("host_information"), str):
+        row_dict["host_information"] = json.loads(row_dict["host_information"])
+
+    return DataProvider(**row_dict)
 
 async def update_data_provider(data_provider_id: str, data: DataProviderCreate, pool) -> Optional[DataProvider]:
     query = """
@@ -122,17 +130,12 @@ async def create_data_provider_data(data_provider_id: str, data: DataProviderDat
     row = await fetch_one(pool, query, data_id, data_provider_id, data.item_code_id, data.data_name, data.description, creation_time, data.data)
     return DataProviderData(**row)
 
-async def get_data_provider_data(data_provider_id: str, data_id: str, pool) -> Optional[DataProviderData]:
-    query = "SELECT * FROM data WHERE data_provider_id = $1 and data_id = $2;"
-    row = await fetch_one(pool, query, data_provider_id)
-    return DataProviderData(**row) if row else None
-
-async def list_data_provider_data(pool) -> List[DataProviderData]:
+async def list_data_provider_data(data_provider_id: str, pool) -> List[DataProviderData]:
     query = """
         SELECT data_id, item_code_id, data_name, description, data
-        FROM data;
+        FROM data WHERE data_provider_id = $1 ;
     """
-    rows = await fetch_all(pool, query)
+    rows = await fetch_all(pool, query, data_provider_id)
 
     return [DataProviderData(**dict(row)) for row in rows]
 
@@ -192,6 +195,6 @@ async def list_data_provider_data_all(pool) -> List[DataProviderData]:
 
 async def delete_data_provider_data(data_provider_id: str, data_id: str, pool) -> bool:
     query = "DELETE FROM data WHERE data_provider_id = $1 and data_id = $2;"
-    result = await execute(pool, query, data_provider_id)
+    result = await execute(pool, query, data_provider_id, data_id)
     return result.endswith("DELETE 1")
 

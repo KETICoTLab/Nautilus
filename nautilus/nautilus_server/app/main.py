@@ -1,14 +1,56 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from app.database import init_db_pool, close_db_pool, pool
 from app.config import HOST, PORT, BASE_URL
 from app.routers import api_router
 from app.logging import print_logo, setup_logging
+from typing import List
 
 app = FastAPI(title="Nautilus API", version="1.0.0", root_path="/nautilus/v1")
 app.include_router(api_router)
 
 Web_url = "http://127.0.0.1:8888"
+
+# ------------------------
+# ✅ WebSocket 관련 설정
+# ------------------------
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                self.disconnect(connection)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/notify")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+# 🔔 외부에서 호출할 수 있도록 manager export
+app.websocket_manager = manager
+
+# ------------------------
+# nautilus startup
+# ------------------------
 
 @app.on_event("startup")
 async def startup():

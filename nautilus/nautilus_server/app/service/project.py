@@ -1,9 +1,13 @@
-from typing import List, Optional
+from typing import Optional, List, Dict
 from app.schemas.project import ProjectCreate, Project
 from app.service.base import fetch_one, fetch_all, execute
 from datetime import datetime, timezone
 import subprocess
 import asyncio
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from nautilus.api.run.run_get_status_check  import check_client_status  
 
 async def create_project(data: ProjectCreate, pool):
     """
@@ -122,3 +126,13 @@ async def validation_check(project_id: str):
         print(f"* validation_check failed: {e}")
         
     return "validation_check"
+
+async def get_client_status(project_id: str, pool) -> Optional[List[Dict]]:
+    try:
+        result = check_client_status(project_id)  # status 결과 리스트 반환
+        #json.dumps(result, indent=2, ensure_ascii=False)
+        return result
+    except Exception as e:
+        # 필요 시 에러 로깅 추가
+        print(f"[ERROR] Failed to get client status: {e}")
+        return None

@@ -266,3 +266,15 @@ def http_post(url, payload):
     except requests.exceptions.RequestException as e:
         print(f"POST 요청 실패: {e}")
         return None
+    
+def get_host_ip():
+    """Get the server's IP address."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Google DNS 서버로 연결하여 IP 조회
+        ip_address = s.getsockname()[0]
+        s.close()
+        return ip_address
+    except Exception as e:
+        print(f"Failed to get host IP: {e}")
+        return "localhost"

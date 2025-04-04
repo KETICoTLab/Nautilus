@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, Dict
 from datetime import datetime
+from enum import Enum
 
 class ResultCreate(BaseModel):
     """JSON 데이터를 필드 없이 그대로 받을 수 있도록 설정"""
@@ -18,3 +19,7 @@ class Result(ResultCreate):
         "from_attributes": True,  # Pydantic v2에서 `orm_mode = True` 대신 사용
         "arbitrary_types_allowed": True  # 사용자 정의 타입 허용
     }
+    
+class ResultType(str, Enum):
+    server = "server"
+    client = "client"

@@ -91,6 +91,7 @@ CREATE TABLE jobs (
 
 CREATE TABLE results (
     result_id TEXT,
+    type TEXT,
     data JSONB,
     creation_time timestamp with time zone -- 생성 시간
 );

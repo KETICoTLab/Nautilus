@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # Client Selection Function is Now here
     
     job = nt_Job_controller(
-        name="hello-pt_cifar10_fedavg", n_clients=n_clients, num_rounds=num_rounds, initial_model=SimpleNetwork()
+        name="hello-pt_cifar10_fedavg", n_clients=n_clients, num_rounds=num_rounds, initial_model=SimpleNetwork(), contribution_method=contribution_method
     )
 
     # Add clients
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         executor = ScriptRunner(
             script=train_script, script_args=""  # f"--batch_size 32 --data_path /tmp/data/site-{i}"
         )
-        job.to(executor, f"site-{i}")
+        job.to(executor, f"site-{i+1}")
 
     print(f"export_job > str(EXPORT_PATH.resolve()): {str(EXPORT_PATH.resolve())}")
     job.export_job(str(EXPORT_PATH.resolve()))

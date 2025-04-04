@@ -1,7 +1,14 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
 
+class ContributionMethod(str, Enum):
+    individual = "individual"
+    loo = "loo"
+    shap = "shap"
+    robust_volume = "robust_volume"
+    
 class JobBase(BaseModel):
     nvflare_job_id: Optional[str] = None
     job_name: str
@@ -15,7 +22,7 @@ class JobBase(BaseModel):
     data_id: List[str]
     global_model_id: Optional[str] = None
     train_code_id: Optional[str] = None
-    contri_est_method: Optional[str] = None
+    contri_est_method: Optional[ContributionMethod] = None
     num_global_iteration: Optional[int] = 1
     num_local_epoch: Optional[int] = 1
     job_config: Optional[str] = None

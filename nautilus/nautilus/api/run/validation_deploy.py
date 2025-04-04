@@ -40,7 +40,6 @@ def main(config_name):
     target_hosts = config_data["target_hosts"]
     client_info = config_data["client_info"]
     number_of_client = config_data["number_of_client"]
-    HOST = config_data["HOST"]
     nodes = config_data["nodes"]
 
     print(f"Starting Nautilus Deployment for Project: {project_id}")
@@ -58,7 +57,7 @@ def main(config_name):
         train_py_path = os.path.abspath(os.path.join(BASE_DIR, "../../simulation/src/hello-pt_cifar10_network.py"))
         container_path = "/workspace/nautilus/nautilus/simulation/src"
                 
-        print(f"Deploying Site-{site} | Host: {target_host} | Node: {node_name} | Pod: {pod_name}")
+        print(f"Deploying Site-{site} | Node: {node_name} | Pod: {pod_name}")
 
         # 1. Nautilus Docker 이미지 로드
         load_nautilus_image(target_host)

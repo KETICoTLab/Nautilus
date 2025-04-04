@@ -5,6 +5,11 @@ from app.service.base import fetch_one, fetch_all, execute
 import subprocess
 from pathlib import Path
 import asyncio
+from app.config import HOST
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from nautilus.core.communicate.validation import execute_command  
 
 async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     job_id = "j-kr-" + data.job_name
@@ -14,42 +19,21 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     RETURNING *;
     """
     
-    '''
-    # run_create_job.py 실행 
-    create_job_script = "../nautilus/api/run/run_create_job.py"  # nautilus/ 디렉토리에 위치 
-    create_job_command = [
-        "python3", create_job_script,
-        "--config_path", f"{project_id}_config.json",
-        "--job_id", job_id,
-        "--aggr_function", data.aggr_function,
-        "--num_global_iteration", str(data.num_global_iteration),
-        "--num_local_epoch", str(data.num_local_epoch)
-    ]
-    '''
-    
-    # ✅ export_job.py 실행 (simulation version)
-    create_job_script = Path("../nautilus/api/contrib/export_job.py").resolve()  # 절대 경로 변환
-    create_job_command = ["python3", str(create_job_script)]
-    print(f"🟢 Running create_job_script: {create_job_command}")
+    cmd_str = (
+        f'cd /workspace/nautilus/nautilus/api && '
+        f'python3 run_export_job.py '
+        f'--contribution_method {data.contri_est_method} '
+        f'--server_url {HOST} '
+        f'--n_clients {len(data.data_id)} '
+        f'--num_rounds {data.num_global_iteration} '
+        f'--num_local_epoch {data.num_local_epoch} '
+        f'--job_name {job_id}'
+    )
+
+    print(f"🟢 Running command string: {cmd_str}")
 
     try:
-        # 🔹 Step 1: create_job 실행
-        create_process = await asyncio.create_subprocess_exec(
-            *create_job_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-        stdout, stderr = await create_process.communicate()
-
-        print(f"[create_job.py LOG]: {stdout.decode().strip()}")
-        print(f"[create_job.py ERROR]: {stderr.decode().strip()}")
-
-        if create_process.returncode != 0:
-            print(f"❌ create_job.py failed with exit code {create_process.returncode}")
-            return None  # 실패 시 중단
-
-        print(f"✅ create_job.py finished successfully.")
+        execute_command(pod_name="mylocalhost", command=cmd_str)
 
     except Exception as e:
         print(f"❌ create_job failed: {e}")
@@ -65,7 +49,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     return Job(**row)
 
 
-async def get_job(project_id: str, job_id: str) -> Optional[Job]:
+async def get_job(project_id: str, job_id: str, pool) -> Optional[Job]:
     query = "SELECT * FROM jobs WHERE job_id = $1;"
     row = await fetch_one(pool, query, job_id)
     return Job(**row) if row else None
@@ -80,12 +64,12 @@ async def update_job(project_id: str, job_id: str, data: JobCreate) -> Optional[
     row = await fetch_one(pool, query, data.job_name, data.description, data.tags, data.creator_id, data.host_information, data.train_code_path, data.train_data_path, job_id)
     return Job(**row) if row else None
 
-async def delete_job(project_id: str, job_id: str) -> bool:
+async def delete_job(project_id: str, job_id: str, pool) -> bool:
     query = "DELETE FROM jobs WHERE job_id = $1;"
     result = await execute(pool, query, job_id)
     return result.endswith("DELETE 1")
 
-async def list_jobs() -> List[Job]:
+async def list_jobs(pool) -> List[Job]:
     query = "SELECT * FROM jobs;"
     rows = await fetch_all(pool, query)
     return [Job(**row) for row in rows]
@@ -94,17 +78,11 @@ async def exec_job(project_id: str, job_id: str):
     """execute_job.py 실행"""
     
     execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
-    '''
+
     execute_job_command = [
         "python3", str(execute_job_script),
         "--project_id", project_id,
         "--job_id", job_id
-    ]
-    '''
-    execute_job_command = [
-        "python3", str(execute_job_script),
-        "--project_id", project_id,
-        "--job_id", "hello-pt_cifar10_fedavg"
     ]
     
     print(f"Running execute_job.py: {' '.join(execute_job_command)}")

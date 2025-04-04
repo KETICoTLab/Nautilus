@@ -46,3 +46,11 @@ class DataProviderData(DataProviderDataBase):
         "from_attributes": True,
         "arbitrary_types_allowed": True
     }
+    
+class DataProviderDataResponse(DataProviderDataBase):
+    data_id: str
+
+    model_config = {
+        "from_attributes": True,
+        "arbitrary_types_allowed": True
+    }
