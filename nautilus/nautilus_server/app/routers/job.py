@@ -26,14 +26,14 @@ async def update_job(project_id: str, job_id: str, data: JobCreate, pool=Depends
 
 @router.delete("/{job_id}")
 async def delete_job(project_id: str, job_id: str, pool=Depends(get_db_pool)):
-    success = await service.delete_job(project_id, job_id)
+    success = await service.delete_job(project_id, job_id, pool)
     if not success:
         raise HTTPException(status_code=404, detail="Job Not Found")
     return {"message": "Deleted successfully"}
 
 @router.get("", response_model=List[Job])
 async def list_jobs(project_id: str, pool=Depends(get_db_pool)):
-    return await service.list_jobs(project_id)
+    return await service.list_jobs(project_id, pool)
 
 @router.post("/{job_id}/exec")
 async def exec_job(project_id: str, job_id: str):

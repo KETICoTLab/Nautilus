@@ -69,7 +69,7 @@ async def delete_job(project_id: str, job_id: str, pool) -> bool:
     result = await execute(pool, query, job_id)
     return result.endswith("DELETE 1")
 
-async def list_jobs(pool) -> List[Job]:
+async def list_jobs(project_id, pool) -> List[Job]:
     query = "SELECT * FROM jobs;"
     rows = await fetch_all(pool, query)
     return [Job(**row) for row in rows]
