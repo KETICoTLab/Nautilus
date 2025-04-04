@@ -430,12 +430,13 @@ def connect_get_namespaced_pod_exec(namespace: str, pod_name: str, command: str)
         v1.connect_get_namespaced_pod_exec,
         name=pod_name,
         namespace=namespace,
-        command=shlex.split(command),
+        command=wrapped_command,
         stderr=True,
         stdin=False,
         stdout=True,
         tty=False
     )
+
     
 def connect_get_namespaced_pod_portforward(namespace: str, pod_name: str, ports: list):
     """Pod의 포트를 포트포워딩"""
