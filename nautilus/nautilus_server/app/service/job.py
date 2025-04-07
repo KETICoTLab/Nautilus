@@ -10,7 +10,7 @@ from app.config import HOST
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from nautilus.core.communicate.validation import execute_command  
+from nautilus.core.communicate.k8s import connect_get_namespaced_pod_exec  
 
 async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     job_id = "j-kr-" + data.job_name
@@ -34,7 +34,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     print(f"🟢 Running command string: {cmd_str}")
 
     try:
-        execute_command(pod_name="mylocalhost", command=cmd_str)
+        connect_get_namespaced_pod_exec(pod_name="mylocalhost", command=cmd_str)
 
     except Exception as e:
         print(f"❌ create_job failed: {e}")
