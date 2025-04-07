@@ -424,7 +424,7 @@ def create_server_deployment(project_id: str , node_name: str, namespace: str = 
 #         tty=False
 #     )
     
-def connect_get_namespaced_pod_exec(namespace: str = "nautilus", pod_name: str, command: str):
+def connect_get_namespaced_pod_exec(pod_name: str, command: str, namespace: str = "nautilus"):
     wrapped_command = ["/bin/bash", "-c", command]
     return stream(
         v1.connect_get_namespaced_pod_exec,
