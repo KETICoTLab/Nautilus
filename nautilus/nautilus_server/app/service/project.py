@@ -14,14 +14,7 @@ async def create_project(data: ProjectCreate, pool):
     number_of_client가 있으면 provision.py실행
     """
     project_id = "p-kr-" + data.project_name
-    
-    query = """
-    INSERT INTO projects (project_id, project_name, description, tags, creator_id, data_provider_ids, number_of_clients, number_of_jobs, number_of_subscriptions, project_image, creation_time, modification_time)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-    RETURNING *;
-    """
-    row = await fetch_one(pool, query, project_id, data.project_name, data.description, data.tags, data.creator_id, data.data_provider_ids, data.number_of_clients, data.number_of_jobs, data.number_of_subscriptions, data.project_image)
-    
+
     # provision.py 실행 (비동기 실행)
     provision_script = "../nautilus/api/run/provision.py"  # nautilus/ 디렉토리에 위치
     provision_command = [
@@ -57,6 +50,14 @@ async def create_project(data: ProjectCreate, pool):
 
     except Exception as e:
         print(f"* provision failed: {e}")
+                
+    query = """
+    INSERT INTO projects (project_id, project_name, description, tags, creator_id, data_provider_ids, number_of_clients, number_of_jobs, number_of_subscriptions, project_image, creation_time, modification_time)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+    RETURNING *;
+    """
+    row = await fetch_one(pool, query, project_id, data.project_name, data.description, data.tags, data.creator_id, data.data_provider_ids, data.number_of_clients, data.number_of_jobs, data.number_of_subscriptions, data.project_image)
+    
 
     return Project(**row)
 
