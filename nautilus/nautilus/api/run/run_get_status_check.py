@@ -8,12 +8,12 @@ ROOT_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 sys.path.insert(0, ROOT_BASE_DIR)
 
 
-def run_nvflare_job_in_pod(pod_name: str, project_id: str) -> str:
+def run_nvflare_job_in_pod(pod_name: str, project_id: str, namespace: str = "nautilus") -> str:
     """
     NVFLARE Admin Console에서 check_status client 명령 실행 후 결과 반환
     """
     admin_script_path = f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/admin@nvidia.com/startup/fl_admin.sh"
-    cmd = f"kubectl exec -i {pod_name} -- {admin_script_path}"
+    cmd = f"kubectl exec -i {pod_name} -n {namespace} -- {admin_script_path}"
     print(f"\n🔧 [실행 명령어]: {cmd}\n")
 
     child = pexpect.spawn(cmd, encoding='utf-8', timeout=30)
