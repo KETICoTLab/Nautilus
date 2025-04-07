@@ -80,7 +80,7 @@ CREATE TABLE jobs (
     client_status TEXT,  -- 클라이언트 상태
     aggr_function TEXT,  -- 집계 함수 (Aggregation Function)
     admin_info TEXT,  -- 관리자 정보
-    data_id TEXT,  -- 데이터 ID (외래키)
+    data_id TEXT[],  -- 데이터 ID (외래키)
     global_model_id TEXT,  -- 글로벌 모델 ID (외래키)
     train_code_id TEXT,  -- 학습 코드 ID (외래키)
     contri_est_method TEXT,  -- 기여 추정 방법 (선택 사항)

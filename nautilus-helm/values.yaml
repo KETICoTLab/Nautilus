@@ -1,5 +1,5 @@
 namespace: nautilus
-projectId: p-kr-federated-learning-pj-01
+projectId: p-kr-federated-learning-pj
 image: nautilus-pv-updated:latest
 mountPath: /tmp/Nautilus
-numClients: 4
+numClients: 3

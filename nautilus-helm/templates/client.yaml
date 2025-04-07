@@ -6,7 +6,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nvflare-client-{{ include "add1" $i }}
+  name: client-{{ include "add1" $i }}
   namespace: {{ $.Values.namespace }}
 spec:
   nodeSelector:
@@ -15,6 +15,11 @@ spec:
     - key: "node.kubernetes.io/disk-pressure"
       operator: "Exists"
       effect: "NoSchedule"
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+        sizeLimit: "1Gi"
   containers:
   - name: client
     image: {{ $.Values.image }}
@@ -22,9 +27,19 @@ spec:
     command: ["/bin/bash", "-c"]
     args:
       - >
-        pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision scipy pulp scikit-learn libgl1 opencv-python &&
+        pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision scipy pulp scikit-learn opencv-python tqdm &&
         python3 /workspace/nautilus/nautilus/api/datasetDownload.py &&
         /workspace/nautilus/nautilus/workspace/provision/{{ $.Values.projectId }}/prod_00/site-{{ include "add1" $i }}/startup/sub_start.sh
+    volumeMounts:
+      - mountPath: /dev/shm
+        name: dshm
+    resources:
+      requests:
+        cpu: "4"
+        memory: "4Gi"
+      limits:
+        cpu: "4"
+        memory: "8Gi"
   restartPolicy: Never
 ---
 {{- end }}
