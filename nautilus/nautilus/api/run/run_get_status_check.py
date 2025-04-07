@@ -14,8 +14,6 @@ def run_nvflare_job_in_pod(pod_name: str, project_id: str, namespace: str = "nau
     """
     admin_script_path = f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/admin@nvidia.com/startup/fl_admin.sh"
     cmd = f"kubectl exec -i {pod_name} -n {namespace} -- {admin_script_path}"
-    print(f"\n🔧 [실행 명령어]: {cmd}\n")
-
     child = pexpect.spawn(cmd, encoding='utf-8', timeout=30)
 
     child.expect("User Name:")
@@ -27,9 +25,6 @@ def run_nvflare_job_in_pod(pod_name: str, project_id: str, namespace: str = "nau
     child.expect("Done")
     output = child.before
 
-    print("\n📄 [명령어 원본 출력]:\n")
-    print(output)  # 전체 원본 출력
-
     return output
 
 
@@ -38,7 +33,6 @@ def parse_check_status_output(output: str) -> List[Dict[str, str]]:
 
     # '|' 로 시작하고 끝나는 줄만 필터링
     content_lines = [line for line in lines if line.strip().startswith('|') and line.strip().endswith('|')]
-    print("\n✅ 테이블 필터링된 줄:\n", content_lines)
 
     if len(content_lines) < 2:
         print("⚠️ 테이블 구조가 부족합니다.")
@@ -50,14 +44,12 @@ def parse_check_status_output(output: str) -> List[Dict[str, str]]:
     results = []
     for line in content_lines[1:]:  # 나머지는 데이터 줄
         cols = [c.strip() for c in line.strip('|').split('|')]
-        print(f"\n🔍 현재 줄 파싱:\n{line}\n➡️ 값 목록: {cols}")
 
         if len(cols) != len(headers):
             print(f"⚠️ 열 개수가 헤더와 맞지 않음 → 건너뜀: {cols}")
             continue
 
         row = dict(zip(headers, cols))
-        print("✅ 변환된 딕셔너리:", row)
         results.append(row)
 
     return results
