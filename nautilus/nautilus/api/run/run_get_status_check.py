@@ -34,31 +34,31 @@ def run_nvflare_job_in_pod(pod_name: str, project_id: str) -> str:
 
 
 def parse_check_status_output(output: str) -> List[Dict[str, str]]:
-    """
-    check_status client 명령 결과를 파싱하여 딕셔너리 리스트로 반환
-    """
-    lines = [line.strip() for line in output.strip().splitlines()]
-    content_lines = [line for line in lines if line.startswith("|") and line.endswith("|")]
+    lines = output.strip().splitlines()
 
-    if len(content_lines) < 3:
-        print("⚠️ 테이블 형식이 올바르지 않음 (헤더 또는 구분선 부족)")
+    # '|' 로 시작하고 끝나는 줄만 필터링
+    content_lines = [line for line in lines if line.strip().startswith('|') and line.strip().endswith('|')]
+    print("\n✅ 테이블 필터링된 줄:\n", content_lines)
+
+    if len(content_lines) < 2:
+        print("⚠️ 테이블 구조가 부족합니다.")
         return []
 
-    header_line = content_lines[1]
-    headers = [h.strip().lower().replace(" ", "_") for h in header_line.strip("|").split("|")]
+    header_line = content_lines[0]
+    headers = [h.strip().lower().replace(" ", "_") for h in header_line.strip('|').split('|')]
 
     results = []
-    for line in content_lines[2:-1]:  # 데이터 줄만 처리
-        cols = [col.strip() for col in line.strip("|").split("|")]
-        if len(cols) != len(headers):
-            print(f"⚠️ 열 개수 불일치 → 무시됨: {cols}")
-            continue
-        row = dict(zip(headers, cols))
-        results.append(row)
+    for line in content_lines[1:]:  # 나머지는 데이터 줄
+        cols = [c.strip() for c in line.strip('|').split('|')]
+        print(f"\n🔍 현재 줄 파싱:\n{line}\n➡️ 값 목록: {cols}")
 
-    print("\n✅ [파싱된 결과]:\n")
-    for r in results:
-        print(r)
+        if len(cols) != len(headers):
+            print(f"⚠️ 열 개수가 헤더와 맞지 않음 → 건너뜀: {cols}")
+            continue
+
+        row = dict(zip(headers, cols))
+        print("✅ 변환된 딕셔너리:", row)
+        results.append(row)
 
     return results
 
