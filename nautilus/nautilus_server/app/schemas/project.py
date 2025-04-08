@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from app.schemas.job import Job
 
 class ProjectBase(BaseModel):
     project_name: str 
@@ -20,6 +21,7 @@ class Project(ProjectBase):
     project_id: str
     creation_time: datetime
     modification_time: datetime
+    jobs: List[Job] = [] 
 
     model_config = {
         "from_attributes": True,  # Pydantic v2에서는 `orm_mode = True` 대신 사용

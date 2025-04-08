@@ -6,6 +6,7 @@ import subprocess
 import asyncio
 import sys
 import os
+import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from nautilus.api.run.run_get_status_check  import check_client_status  
 
@@ -61,18 +62,16 @@ async def create_project(data: ProjectCreate, pool):
 
     return Project(**row)
 
-async def get_project(project_id: str) -> Optional[Project]:
+async def get_project(project_id: str, pool) -> Optional[Project]:
     query = "SELECT * FROM projects WHERE project_id = $1;"
     row = await fetch_one(pool, query, project_id)
     return Project(**row) if row else None
 
-async def update_project(project_id: str, data: ProjectCreate) -> Optional[Project]:
+async def update_project(project_id: str, data: ProjectCreate, pool) -> Optional[Project]:
     """
     data_provider_ids가 있으면 등록된 provider의 host-ip, data_provider_name 조회 하여 인자 전달 validation.py실행
     """
-    
-    
-    
+
     query = """
     UPDATE projects
     SET project_name = $1, description = $2, tags = $3, creator_id = $4, number_of_clients = $5, number_of_jobs = $6, number_of_subscriptions = $7, project_image = $8, modification_time = NOW()
@@ -82,15 +81,60 @@ async def update_project(project_id: str, data: ProjectCreate) -> Optional[Proje
     row = await fetch_one(pool, query, data.project_name, data.description, data.tags, data.creator_id, data.number_of_clients, data.number_of_jobs, data.number_of_subscriptions, data.project_image, project_id)
     return Project(**row) if row else None
 
-async def delete_project(project_id: str) -> bool:
-    query = "DELETE FROM projects WHERE project_id = $1;"
-    result = await execute(pool, query, project_id)
+async def delete_project(project_id: str, pool) -> bool:
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # 1. check_status 삭제 (client_id 기준)
+            await conn.execute("""
+                DELETE FROM check_status
+                WHERE client_id IN (
+                    SELECT client_id FROM clients WHERE project_id = $1
+                )
+            """, project_id)
+
+            # 2. clients 삭제
+            await conn.execute("""
+                DELETE FROM clients WHERE project_id = $1
+            """, project_id)
+
+            # 3. jobs 삭제
+            await conn.execute("""
+                DELETE FROM jobs WHERE project_id = $1
+            """, project_id)
+
+            # 4. projects 삭제
+            result = await conn.execute("""
+                DELETE FROM projects WHERE project_id = $1
+            """, project_id)
+
     return result.endswith("DELETE 1")
 
-async def list_projects() -> List[Project]:
-    query = "SELECT * FROM projects;"
+async def list_projects(pool) -> List[Project]:
+    query = """
+    SELECT 
+        p.*, 
+        COALESCE(json_agg(j) FILTER (WHERE j.job_id IS NOT NULL), '[]'::json) AS jobs
+    FROM 
+        projects p
+    LEFT JOIN 
+        jobs j ON p.project_id = j.project_id
+    GROUP BY 
+        p.project_id;
+    """
     rows = await fetch_all(pool, query)
-    return [Project(**row) for row in rows]
+    result = []
+    for row in rows:
+        row_dict = dict(row)
+        if isinstance(row_dict.get("jobs"), str):
+            row_dict["jobs"] = json.loads(row_dict["jobs"])
+
+        # ✅ jobs 내부의 각 job 딕셔너리에서 data_id가 None이면 []로 바꾸기
+        for job in row_dict.get("jobs", []):
+            if job.get("data_id") is None:
+                job["data_id"] = []
+
+        result.append(Project(**row_dict))
+    return result
 
 
 async def validation_check(project_id: str):
