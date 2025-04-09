@@ -33,7 +33,7 @@ def deploy():
     MINIO_ENDPOINT = "http://localhost:9000"
     MINIO_BUCKET = "images"
     IMAGE_NAME = "nautilus-default-img.tar"
-    TAR_IMAGE_NAME = "nautilus-vlight:0.3"
+    TAR_IMAGE_NAME = "nautilus-vlight:0.4" #install verion 11G
 
     # 현재 provision.py의 위치를 기준으로 Nautilus/nautilus/nautilus/workspace/images/ 설정
     LOCAL_WORKSPACE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/images/"))

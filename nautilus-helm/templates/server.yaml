@@ -24,8 +24,6 @@ spec:
     command: ["/bin/bash", "-c"]
     args:
       - >
-        pip install --upgrade nvflare==2.5.2 torch tensorboard torchvision scipy pulp scikit-learn opencv-python tqdm &&
-        python3 /workspace/nautilus/nautilus/api/datasetDownload.py &&
         /workspace/nautilus/nautilus/workspace/provision/{{ .Values.projectId }}/prod_00/mylocalhost/startup/sub_start.sh
     ports:
       - containerPort: 8002
