@@ -15,6 +15,12 @@ spec:
     - key: "node.kubernetes.io/disk-pressure"
       operator: "Exists"
       effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
   volumes:
     - name: dshm
       emptyDir:
