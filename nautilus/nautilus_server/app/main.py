@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db_pool, close_db_pool, pool
 from app.config import HOST, PORT, BASE_URL
 from app.routers import api_router
@@ -8,8 +9,15 @@ from typing import List
 
 app = FastAPI(title="Nautilus API", version="1.0.0", root_path="/nautilus/v1")
 app.include_router(api_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 또는 ["*"]로 모든 origin 허용 (개발용)
+    allow_credentials=True,
+    allow_methods=["*"],  # GET, POST, etc
+    allow_headers=["*"],
+)
 
-Web_url = "http://127.0.0.1:8888"
+Web_url = "http://127.0.0.1:5173"
 
 # ------------------------
 # ✅ WebSocket 관련 설정
