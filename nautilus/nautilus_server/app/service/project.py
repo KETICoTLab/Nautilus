@@ -8,7 +8,8 @@ import sys
 import os
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from nautilus.api.run.run_get_status_check  import check_client_status  
+#from nautilus.api.run.run_get_status_check  import check_client_status  
+from nautilus.api.run.run_get_status_check_container import check_client_status  
 
 async def create_project(data: ProjectCreate, pool):
     """

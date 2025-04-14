@@ -1,4 +1,5 @@
-# run_get_status_check
+# run_get_status_check_container.py (docker-compose 환경용)
+
 import os
 import sys
 import pexpect
@@ -8,25 +9,32 @@ from typing import List, Dict
 ROOT_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, ROOT_BASE_DIR)
 
-
-def run_nvflare_job_in_pod(pod_name: str, project_id: str, namespace: str = "nautilus") -> str:
+def run_nvflare_job_in_container(container_name: str, project_id: str) -> str:
     """
-    NVFLARE Admin Console에서 check_status client 명령 실행 후 결과 반환
+    docker-compose로 띄운 NVFLARE Admin Console 컨테이너에서 check_status client 실행
     """
     admin_script_path = f"/workspace/nautilus/nautilus/workspace/provision/{project_id}/prod_00/admin@nvidia.com/startup/fl_admin.sh"
-    cmd = f"kubectl exec -i {pod_name} -n {namespace} -- {admin_script_path}"
+    cmd = f"docker exec -i {container_name} {admin_script_path}"
+    print(f"📦 실행 명령어: {cmd}")
     child = pexpect.spawn(cmd, encoding='utf-8', timeout=30)
 
-    child.expect("User Name:")
-    child.sendline("admin@nvidia.com")
+    try:
+        child.expect("User Name:")
+        child.sendline("admin@nvidia.com")
 
-    child.expect(">")
-    child.sendline("check_status client")
+        child.expect(">")
+        child.sendline("check_status client")
 
-    child.expect("Done")
-    output = child.before
+        child.expect("Done")
+        output = child.before
+        return output
 
-    return output
+    except pexpect.exceptions.EOF:
+        return "❌ EOF 발생 - 컨테이너가 예상대로 응답하지 않음"
+    except pexpect.exceptions.TIMEOUT:
+        return "❌ Timeout 발생 - 컨테이너 명령 실행 시간 초과"
+    finally:
+        child.close()
 
 
 def parse_check_status_output(output: str) -> List[Dict[str, str]]:
@@ -57,9 +65,8 @@ def parse_check_status_output(output: str) -> List[Dict[str, str]]:
 
 
 def check_client_status(project_id: str) -> List[Dict[str, str]]:
-    #pod_name = f"{project_id}-server"
-    pod_name = "mylocalhost"
-    raw_output = run_nvflare_job_in_pod(pod_name=pod_name, project_id=project_id)
+    container_name = "mylocalhost"  # docker-compose에서 설정한 서버 컨테이너 이름
+    raw_output = run_nvflare_job_in_container(container_name=container_name, project_id=project_id)
     return parse_check_status_output(raw_output)
 
 
@@ -68,7 +75,7 @@ if __name__ == "__main__":
     import argparse
     import json
 
-    parser = argparse.ArgumentParser(description="Check NVFLARE client status")
+    parser = argparse.ArgumentParser(description="Check NVFLARE client status via Docker")
     parser.add_argument("--project_id", type=str, required=True, help="Project ID")
     args = parser.parse_args()
 
