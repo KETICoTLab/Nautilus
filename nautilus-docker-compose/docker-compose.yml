@@ -1,0 +1,86 @@
+version: "3.9"
+
+networks:
+  nautilus-net:
+    driver: bridge
+
+services:
+  server:
+    container_name: nautilus-server
+    image: nautilus-pv-updated:latest
+    hostname: nautilus-server
+    networks:
+      - nautilus-net
+    shm_size: "1g"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8g
+        reservations:
+          cpus: '4'
+          memory: 4g
+    volumes:
+      - /dev/shm:/dev/shm
+    command: >
+      /bin/bash -c "/workspace/nautilus/nautilus/workspace/provision/p-kr-federated-learning-pj/prod_00/mylocalhost/startup/sub_start.sh"
+
+  client-1:
+    container_name: nautilus-client-1
+    image: nautilus-pv-updated:latest
+    hostname: site-1
+    networks:
+      - nautilus-net
+    shm_size: "1g"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8g
+        reservations:
+          cpus: '4'
+          memory: 4g
+    volumes:
+      - /dev/shm:/dev/shm
+    command: >
+      /bin/bash -c "/workspace/nautilus/nautilus/workspace/provision/p-kr-federated-learning-pj/prod_00/site-1/startup/sub_start.sh"
+
+  client-2:
+    container_name: nautilus-client-2
+    image: nautilus-pv-updated:latest
+    hostname: site-2
+    networks:
+      - nautilus-net
+    shm_size: "1g"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8g
+        reservations:
+          cpus: '4'
+          memory: 4g
+    volumes:
+      - /dev/shm:/dev/shm
+    command: >
+      /bin/bash -c "/workspace/nautilus/nautilus/workspace/provision/p-kr-federated-learning-pj/prod_00/site-2/startup/sub_start.sh"
+
+  client-3:
+    container_name: nautilus-client-3
+    image: nautilus-pv-updated:latest
+    hostname: site-3
+    networks:
+      - nautilus-net
+    shm_size: "1g"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8g
+        reservations:
+          cpus: '4'
+          memory: 4g
+    volumes:
+      - /dev/shm:/dev/shm
+    command: >
+      /bin/bash -c "/workspace/nautilus/nautilus/workspace/provision/p-kr-federated-learning-pj/prod_00/site-3/startup/sub_start.sh"
