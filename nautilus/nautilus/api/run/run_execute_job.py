@@ -1,4 +1,4 @@
-# run_create_job
+# run_exec_job
 import os  
 import json
 import argparse
@@ -9,9 +9,6 @@ import pexpect
 # 📌 ROOT_BASE_DIR `nautilus` 루트 디렉토리로 설정
 ROOT_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, ROOT_BASE_DIR)
-from nautilus.core.communicate.validation import (
-    execute_command
-)
 from nautilus.core.communicate.k8s import (
     get_pod_name_by_deployment
 )

@@ -6,7 +6,7 @@ networks:
 
 services:
   server:
-    container_name: nautilus-server
+    container_name: mylocalhost
     image: nautilus-pv-updated:latest
     hostname: mylocalhost
     networks:

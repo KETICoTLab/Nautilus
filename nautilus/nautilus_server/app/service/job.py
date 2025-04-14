@@ -6,11 +6,12 @@ from app.service.base import fetch_one, fetch_all, execute
 import subprocess
 from pathlib import Path
 import asyncio
-from app.config import HOST
+#from app.config import HOST
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from nautilus.core.communicate.k8s import connect_get_namespaced_pod_exec  
+from nautilus.core.communicate.docker import exec_command_in_container
 
 async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     job_id = "j-kr-" + data.job_name
@@ -19,7 +20,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     RETURNING *;
     """
-    
+    HOST = "172.17.0.1" #컨테이너에서 로컬로 통신
     cmd_str = (
         f'cd /workspace/nautilus/nautilus/api && '
         f'python3 run_export_job.py '
@@ -34,7 +35,8 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     print(f"🟢 Running command string: {cmd_str}")
 
     try:
-        connect_get_namespaced_pod_exec(pod_name="mylocalhost", command=cmd_str)
+        #connect_get_namespaced_pod_exec(pod_name="mylocalhost", command=cmd_str)
+        exec_command_in_container(container_name="mylocalhost", command=cmd_str)
 
     except Exception as e:
         print(f"❌ create_job failed: {e}")
@@ -78,8 +80,9 @@ async def list_jobs(project_id, pool) -> List[Job]:
 async def exec_job(project_id: str, job_id: str):
     """execute_job.py 실행"""
     
-    execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
-
+    #execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
+    execute_job_script = Path("../nautilus/api/run/run_execute_job_container.py").resolve()
+    
     execute_job_command = [
         "python3", str(execute_job_script),
         "--project_id", project_id,
