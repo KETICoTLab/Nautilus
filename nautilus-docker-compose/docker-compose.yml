@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3"
 
 networks:
   nautilus-net:
@@ -8,18 +8,10 @@ services:
   server:
     container_name: nautilus-server
     image: nautilus-pv-updated:latest
-    hostname: nautilus-server
+    hostname: mylocalhost
     networks:
       - nautilus-net
     shm_size: "1g"
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8g
-        reservations:
-          cpus: '4'
-          memory: 4g
     volumes:
       - /dev/shm:/dev/shm
     command: >
@@ -32,14 +24,6 @@ services:
     networks:
       - nautilus-net
     shm_size: "1g"
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8g
-        reservations:
-          cpus: '4'
-          memory: 4g
     volumes:
       - /dev/shm:/dev/shm
     command: >
@@ -52,14 +36,6 @@ services:
     networks:
       - nautilus-net
     shm_size: "1g"
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8g
-        reservations:
-          cpus: '4'
-          memory: 4g
     volumes:
       - /dev/shm:/dev/shm
     command: >
@@ -72,14 +48,6 @@ services:
     networks:
       - nautilus-net
     shm_size: "1g"
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8g
-        reservations:
-          cpus: '4'
-          memory: 4g
     volumes:
       - /dev/shm:/dev/shm
     command: >
