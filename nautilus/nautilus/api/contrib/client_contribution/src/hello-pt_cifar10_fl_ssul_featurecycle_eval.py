@@ -65,7 +65,7 @@ def get_resnet18_feature_extractor():
         nn.Flatten()  # output shape: (batch, 512)
     )
 
-def main(server_url: str, num_local_epoch: int):
+def main(server_url: str, num_local_epoch: int, project_id: str):
     batch_size = 4
     epochs = num_local_epoch
     lr = 0.01
@@ -127,6 +127,7 @@ def main(server_url: str, num_local_epoch: int):
             local_accuracy, local_loss = evaluate(model, test_loader, device, loss)
             payload = {
                 "data": {
+                    "project_id": project_id
                     "client_name": client_name,
                     "epoch": epoch,
                     "local_accuracy": local_accuracy,
@@ -165,8 +166,9 @@ def main(server_url: str, num_local_epoch: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run FL client with optional server_url")
     parser.add_argument("--server_url", type=str, required=True, help="Server URL to send results to")
-    parser.add_argument("--num_local_epoch", type=int, default=2, help="Server URL to send results to")
+    parser.add_argument("--num_local_epoch", type=int, default=2, help="num_local_epoch")
+    parser.add_argument("--project_id", type=str, required=True, help="project_id")
     args = parser.parse_args()
 
-    main(server_url=args.server_url, num_local_epoch=args.num_local_epoch)
+    main(server_url=args.server_url, num_local_epoch=args.num_local_epoch, project_id=args.project_id)
 
