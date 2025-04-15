@@ -5,7 +5,7 @@ from fastapi import APIRouter
 #     train_code, service, subscription, preproc_tool, validation_tool
 # )
 from app.routers import (
-    data_provider, project, job, client, result
+    data_provider, project, job, client
 )
 
 api_router = APIRouter()
@@ -24,4 +24,3 @@ api_router.include_router(client.router)
 # api_router.include_router(subscription.router)
 # api_router.include_router(preproc_tool.router)
 # api_router.include_router(validation_tool.router)
-api_router.include_router(result.router)

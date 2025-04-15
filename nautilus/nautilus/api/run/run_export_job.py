@@ -10,7 +10,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description="Export FL Job with specified contribution method")
     parser.add_argument("--contribution_method", default="robust_volume", help="Method used to estimate client contribution")
-    parser.add_argument("--server_url", default="http://localhost:8000/nautilus/v1/result", help="Method used to post result")
+    parser.add_argument("--server_url", default="172.17.0.1", help="Method used to post result")
     parser.add_argument("--n_clients", type=int, default=2, help="client num")
     parser.add_argument("--num_rounds", type=int, default=2, help="num round")
     parser.add_argument("--num_local_epoch", type=int, default=2, help="num local epoch")
@@ -19,14 +19,13 @@ def main():
 
     args = parser.parse_args()
     contribution_method = args.contribution_method
-    server_url = f"http://{args.server_url}:8000/nautilus/v1/result/server"
-    server_url_for_client = f"http://{args.server_url}:8000/nautilus/v1/result/client"
-    
     n_clients = args.n_clients
     num_rounds = args.num_rounds
     num_local_epoch = args.num_local_epoch
     job_name = args.job_name
     project_id= args.project_id
+    server_url = f"http://{args.server_url}:8000/nautilus/v1/projects/{project_id}/jobs/{job_name}/result/server"
+    server_url_for_client = f"http://{args.server_url}:8000/nautilus/v1/projects/{project_id}/jobs/{job_name}/result/client"
 
     train_script = "src/hello-pt_cifar10_fl_ssul_featurecycle_eval.py"
     DATASET_PATH = "/tmp/nvflare/data"
