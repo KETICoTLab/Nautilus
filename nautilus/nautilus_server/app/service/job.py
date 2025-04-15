@@ -29,7 +29,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
         f'--n_clients {len(data.data_id)} '
         f'--num_rounds {data.num_global_iteration} '
         f'--num_local_epoch {data.num_local_epoch} '
-        f'--job_name {job_id}'
+        f'--job_name {job_id} '
         f'--project_id {project_id}'
     )
 
