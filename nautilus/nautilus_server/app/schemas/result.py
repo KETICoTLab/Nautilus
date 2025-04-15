@@ -14,6 +14,8 @@ class ResultCreate(BaseModel):
 class Result(ResultCreate):
     result_id: str  # 데이터베이스에서 ID를 관리하는 경우 추가
     creation_time: datetime  # 생성 시간을 저장
+    project_id: str
+    job_id: str
 
     model_config = {
         "from_attributes": True,  # Pydantic v2에서 `orm_mode = True` 대신 사용

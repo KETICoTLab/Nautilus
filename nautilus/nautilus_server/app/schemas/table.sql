@@ -90,6 +90,8 @@ CREATE TABLE jobs (
 );
 
 CREATE TABLE results (
+    job_id TEXT,  -- 작업 ID
+    project_id TEXT,  -- 프로젝트 ID (외래키)
     result_id TEXT,
     type TEXT,
     data JSONB,
