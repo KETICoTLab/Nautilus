@@ -126,8 +126,9 @@ def main(server_url: str, num_local_epoch: int, project_id: str):
             # 각 epoch 후 local_accuracy 및 local_loss 평가
             local_accuracy, local_loss = evaluate(model, test_loader, device, loss)
             payload = {
+                "event_type": "client_result_created",
                 "data": {
-                    "project_id": project_id
+                    "project_id": project_id,
                     "client_name": client_name,
                     "epoch": epoch,
                     "local_accuracy": local_accuracy,
