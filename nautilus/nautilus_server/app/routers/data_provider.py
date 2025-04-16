@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.database import get_db_pool
 from typing import List
-from app.schemas.data_provider import DataProvider, DataProviderCreate, DataProviderData, DataProviderDataCreate, DataProviderDataResponse
+from app.schemas.data_provider import DataProvider, DataProviderCreate, DataProviderResponse, DataProviderData, DataProviderDataCreate, DataProviderDataResponse
 from app.service import data_provider as service
 
 router = APIRouter(prefix="/data-providers", tags=["Data Providers"])
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/data-providers", tags=["Data Providers"])
 async def create_data_provider(data: DataProviderCreate, pool=Depends(get_db_pool)):
     return await service.create_data_provider(data, pool)
 
-@router.get("/{data_provider_id}", response_model=DataProvider)
+@router.get("/{data_provider_id}", response_model=DataProviderResponse)
 async def get_data_provider(data_provider_id: str, pool=Depends(get_db_pool)):
     dp = await service.get_data_provider(data_provider_id, pool)
     if not dp:

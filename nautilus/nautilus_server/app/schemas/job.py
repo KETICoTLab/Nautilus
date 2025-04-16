@@ -13,12 +13,12 @@ class JobBase(BaseModel):
     nvflare_job_id: Optional[str] = None
     job_name: str
     description: Optional[str] = None
-    tags: Optional[str] = None
+    tags: Optional[List[str]] = None
     creator_id: Optional[str] = None
     job_status: Optional[str] = None
     client_status: Optional[str] = None
     aggr_function: str
-    admin_info: str
+    admin_info: Optional[str] = None
     data_id: List[str]
     global_model_id: Optional[str] = None
     train_code_id: Optional[str] = None
@@ -41,3 +41,17 @@ class Job(JobBase):
         "from_attributes": True,  # Pydantic v2에서는 `orm_mode = True` 대신 사용
         "arbitrary_types_allowed": True  # 사용자 정의 타입 허용
     }
+
+class JobUpdate(JobBase):
+    job_name: str = None
+    description: Optional[str] = None
+    tags: Optional[List[str]] = None
+    creator_id: Optional[str] = None
+    aggr_function: Optional[str] = None
+    data_id: Optional[List[str]] = None
+    global_model_id: Optional[str] = None
+    train_code_id: Optional[str] = None
+    contri_est_method: Optional[ContributionMethod] = None
+    num_global_iteration: Optional[int] = None
+    num_local_epoch: Optional[int] = None
+

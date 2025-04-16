@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from app.database import get_db_pool
 from typing import List, Optional
-from app.schemas.job import Job, JobCreate
+from app.schemas.job import Job, JobCreate, JobUpdate
 from app.schemas.result import Result, ResultCreate, ResultType
 from app.service import job as service
 from app.service import result as result_service
@@ -20,8 +20,8 @@ async def get_job(project_id: str, job_id: str, pool=Depends(get_db_pool)):
         raise HTTPException(status_code=404, detail="Job Not Found")
     return job
 
-@router.patch("/{job_id}", response_model=Job)
-async def update_job(project_id: str, job_id: str, data: JobCreate, pool=Depends(get_db_pool)):
+@router.patch("/{job_id}", response_model=JobUpdate)
+async def update_job(project_id: str, job_id: str, data: JobUpdate, pool=Depends(get_db_pool)):
     job = await service.update_job(project_id, job_id, data, pool)
     if not job:
         raise HTTPException(status_code=404, detail="Job Not Found")

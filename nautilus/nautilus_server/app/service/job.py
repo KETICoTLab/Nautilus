@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from typing import List, Optional
-from app.schemas.job import JobCreate, Job
+from app.schemas.job import JobCreate, Job, JobUpdate
 from app.database import pool
 from app.service.base import fetch_one, fetch_all, execute
 import subprocess
@@ -43,7 +43,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
         print(f"❌ create_job failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-    # 🔹 Step 3: DB에 Job 정보 저장
+    # Step 3: DB에 Job 정보 저장
     row = await fetch_one(
         pool, query, project_id, job_id, data.job_name, data.description, data.tags, data.creator_id,
         data.job_status, data.client_status, data.aggr_function, data.admin_info, data.data_id,
@@ -58,15 +58,86 @@ async def get_job(project_id: str, job_id: str, pool) -> Optional[Job]:
     row = await fetch_one(pool, query, job_id)
     return Job(**row) if row else None
 
-async def update_job(project_id: str, job_id: str, data: JobCreate) -> Optional[Job]:
-    query = """
+async def update_job(project_id: str, job_id: str, data: JobUpdate, pool) -> Optional[Job]:
+    # Step 1: 기존 job 불러오기
+    existing_query = "SELECT * FROM jobs WHERE job_id = $1 AND project_id = $2"
+    existing = await fetch_one(pool, existing_query, job_id, project_id)
+    if not existing:
+        return None
+
+    # Step 2: 변경 필드 구성
+    field_map = {
+        "job_name": data.job_name,
+        "description": data.description,
+        "tags": data.tags,
+        "creator_id": data.creator_id,
+        "aggr_function": data.aggr_function,
+        "data_id": data.data_id,
+        "global_model_id": data.global_model_id,
+        "train_code_id": data.train_code_id,
+        "contri_est_method": data.contri_est_method,
+        "num_global_iteration": data.num_global_iteration,
+        "num_local_epoch": data.num_local_epoch
+    }
+
+    set_clauses = []
+    values = []
+    idx = 1
+
+    cmd_trigger_fields = [
+        "data_id", "contri_est_method", "num_global_iteration", "num_local_epoch"
+    ]
+    cmd_triggered = False
+
+    for key, value in field_map.items():
+        if value is not None:
+            set_clauses.append(f"{key} = ${idx}")
+            values.append(value)
+
+            # ✅ 변경 여부 확인
+            if key in cmd_trigger_fields and existing.get(key) != value:
+                cmd_triggered = True
+
+            idx += 1
+
+    if not set_clauses:
+        return None
+
+    set_clauses.append("modification_time = NOW()")
+    query = f"""
     UPDATE jobs
-    SET job_name = $1, description = $2, tags = $3, creator_id = $4, host_information = $5, train_code_path = $6, train_data_path = $7, modification_time = NOW()
-    WHERE job_id = $8
+    SET {', '.join(set_clauses)}
+    WHERE job_id = ${idx} AND project_id = ${idx + 1}
     RETURNING *;
     """
-    row = await fetch_one(pool, query, data.job_name, data.description, data.tags, data.creator_id, data.host_information, data.train_code_path, data.train_data_path, job_id)
+    values.append(job_id)
+    values.append(project_id)
+
+    row = await fetch_one(pool, query, *values)
+
+    print(cmd_triggered)
+    # Step 3: 조건 충족 시 exec 실행
+    if cmd_triggered:
+        HOST = "172.17.0.1"
+        cmd_str = (
+            f'cd /workspace/nautilus/nautilus/api && '
+            f'python3 run_export_job.py '
+            f'--contribution_method {data.contri_est_method or existing["contri_est_method"]} '
+            f'--server_url {HOST} '
+            f'--n_clients {len(data.data_id or existing["data_id"])} '
+            f'--num_rounds {data.num_global_iteration or existing["num_global_iteration"]} '
+            f'--num_local_epoch {data.num_local_epoch or existing["num_local_epoch"]} '
+            f'--job_name {job_id} '
+            f'--project_id {project_id}'
+        )
+        try:
+            print(f"🔁 Updated job triggers: {cmd_str}")
+            exec_command_in_container(container_name="mylocalhost", command=cmd_str)
+        except Exception as e:
+            print(f"❌ exec_command failed: {e}")
+
     return Job(**row) if row else None
+
 
 async def delete_job(project_id: str, job_id: str, pool) -> bool:
     query = "DELETE FROM jobs WHERE job_id = $1;"

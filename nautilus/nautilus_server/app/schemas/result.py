@@ -1,10 +1,11 @@
 from pydantic import BaseModel, Field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from datetime import datetime
 from enum import Enum
 
 class ResultCreate(BaseModel):
     """JSON 데이터를 필드 없이 그대로 받을 수 있도록 설정"""
+    event_type: Optional[str] = None
     data: Dict[str, Any] = Field(..., description="임의의 JSON 데이터를 저장")  # ✅ JSON 전체를 받음
 
     class Config:

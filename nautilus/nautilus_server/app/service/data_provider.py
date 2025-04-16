@@ -1,5 +1,5 @@
 from typing import List, Optional
-from app.schemas.data_provider import DataProviderCreate, DataProvider , DataProviderDataCreate, DataProviderData, HostInformation
+from app.schemas.data_provider import DataProviderCreate, DataProvider, DataProviderResponse, DataProviderDataCreate, DataProviderData, HostInformation
 from app.service.base import fetch_one, fetch_all, execute
 from datetime import datetime, timezone
 import json
@@ -54,9 +54,9 @@ async def create_ansible_host_vars(host_information, data_provider_id):
 
     # yml 파일 내용 생성
     yml_content = f"""ansible_become_password: "{password}"
-ansible_ssh_user: "{username}"
-ansible_ssh_password: "{password}"
-"""
+                ansible_ssh_user: "{username}"
+                ansible_ssh_password: "{password}"
+                """
 
     # YAML 파일 저장
     with open(host_vars_path, "w", encoding="utf-8") as yml_file:
@@ -71,7 +71,7 @@ ansible_ssh_password: "{password}"
     run_join_playbook(ip_address, str(data_provider_id), str("master_node_ip"))#master pc ip적어줘야 함.
     
     
-async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProvider]:
+async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProviderResponse]:
     query = "SELECT * FROM data_providers WHERE data_provider_id = $1;"
     row = await fetch_one(pool, query, data_provider_id)
 
@@ -82,7 +82,10 @@ async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProvide
     if isinstance(row_dict.get("host_information"), str):
         row_dict["host_information"] = json.loads(row_dict["host_information"])
 
-    return DataProvider(**row_dict)
+    # ✅ host_information 제거
+    row_dict.pop("host_information", None)
+
+    return DataProviderResponse(**row_dict)
 
 async def update_data_provider(data_provider_id: str, data: DataProviderCreate, pool) -> Optional[DataProvider]:
     query = """
@@ -99,7 +102,7 @@ async def delete_data_provider(data_provider_id: str, pool) -> bool:
     result = await execute(pool, query, data_provider_id)
     return result.endswith("DELETE 1")
 
-async def list_data_providers(pool) -> List[DataProvider]:
+async def list_data_providers(pool) -> List[DataProviderResponse]:
     query = "SELECT * FROM data_providers;"
     rows = await fetch_all(pool, query)
     providers = []
@@ -107,14 +110,13 @@ async def list_data_providers(pool) -> List[DataProvider]:
     for row in rows:
         data = dict(row)
 
-        # asyncpg에서 JSONB 필드를 문자열로 반환한 경우 처리
         if isinstance(data.get("host_information"), str):
             try:
                 data["host_information"] = json.loads(data["host_information"])
             except json.JSONDecodeError:
                 raise ValueError("Invalid JSON format in host_information")
 
-        providers.append(DataProvider(**data))
+        providers.append(DataProviderResponse(**data))
     return providers
 
 
@@ -155,7 +157,6 @@ async def list_data_provider_data_all(pool) -> List[DataProviderData]:
         dp.description AS provider_description,
         dp.tags,
         dp.creator_id,
-        dp.host_information,
         dp.train_code_path,
         dp.train_data_path
 
@@ -175,7 +176,6 @@ async def list_data_provider_data_all(pool) -> List[DataProviderData]:
             description=row_dict["provider_description"],
             tags=row_dict["tags"],
             creator_id=row_dict["creator_id"],
-            host_information=HostInformation(**json.loads(row_dict["host_information"])),
             train_code_path=row_dict["train_code_path"],
             train_data_path=row_dict["train_data_path"]
         )

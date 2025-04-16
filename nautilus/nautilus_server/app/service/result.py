@@ -15,29 +15,41 @@ async def create_result(project_id, job_id, data, pool, request: Request, result
     VALUES ($1, $2::jsonb, NOW(), $3, $4, $5)
     RETURNING *;
     """
-    json_data = json.dumps(data.data)
+
+    # ✅ event_type과 data는 요청 객체에서 직접 사용
+    event_type = data.event_type
+    payload_data = data.data
+
+    # DB에 저장할 데이터는 payload_data만
+    json_data = json.dumps(payload_data)
     row = await fetch_one(pool, query, result_id, json_data, result_type, project_id, job_id)
+
+    # ⏱ 포맷된 타임스탬프 생성
     creation_time = row["creation_time"].astimezone(KST)
     formatted_time = creation_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
     # ✅ WebSocket 알림 전송
     message = json.dumps({
-        "event": f"{result_type}_result_created",
+        "event": event_type,  # 요청에서 직접 받은 값
         "result_id": result_id,
-        "data": json.loads(row["data"]),
+        "data": payload_data,  # 요청 본문에서 받은 실제 내용
         "timestamp": formatted_time,
         "project_id": project_id,
         "job_id": job_id
     }, default=str)
+
     print(f"✅ WebSocket message: {message}")
     await request.app.websocket_manager.broadcast(message)
 
+    # 응답 객체도 그대로 구성
     return Result(
         result_id=row["result_id"],
-        data=json.loads(row["data"]),
+        data=payload_data,
         creation_time=formatted_time,
         project_id=row["project_id"],
-        job_id=row["job_id"]
+        job_id=row["job_id"],
     )
+
 
 async def get_result(project_id, job_id, pool, result_type: Optional[str] = None):
     # ✅ 조건에 따라 쿼리 분기
