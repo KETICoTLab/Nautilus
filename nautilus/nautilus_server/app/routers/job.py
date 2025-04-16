@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from app.database import get_db_pool
 from typing import List, Optional
 from app.schemas.job import Job, JobCreate, JobUpdate
-from app.schemas.result import Result, ResultCreate, ResultType
+from app.schemas.result import Result, ResultCreate, ResultType, ResultResponse
 from app.service import job as service
 from app.service import result as result_service
 
@@ -44,7 +44,7 @@ async def exec_job(project_id: str, job_id: str):
     return {"message": f"Job {job_id} execution started for project {project_id}."}
 
 
-@router.post("/{job_id}/result/{result_type}", response_model=Result)
+@router.post("/{job_id}/result/{result_type}", response_model=ResultResponse)
 async def create_result_by_type(
     project_id: str, 
     job_id: str,
@@ -55,7 +55,7 @@ async def create_result_by_type(
 ):
     return await result_service.create_result(project_id, job_id, data, pool, request, result_type=result_type.value)
 
-@router.get("/{job_id}/result", response_model=List[Result])
+@router.get("/{job_id}/result", response_model=List[ResultResponse])
 async def get_result(
     project_id: str, 
     job_id: str,
