@@ -1,5 +1,5 @@
 api_version: 3
-name: example_project_check
+name: example_project
 description: NVIDIA FLARE sample project yaml file
 
 participants:

@@ -1,3 +1,4 @@
+
 from __future__ import absolute_import
 
 import argparse
@@ -8,10 +9,8 @@ import sys
 from typing import Optional
 
 from nvflare.fuel.utils.class_utils import instantiate_class
-from src.constants import ParticipantType, PropKey
-from src.provisioner import Provisioner
-from src.spec import Project
-from src.utils import load_yaml
+from nvflare.lighter.spec import Participant, Project, Provisioner
+from nvflare.lighter.utils import load_yaml
 
 adding_client_error_msg = """
 name: $SITE-NAME
@@ -34,16 +33,9 @@ role: $ROLE
 """
 
 
-# def define_provision_parser(parser):
-#     parser.add_argument("-p", "--project_file", type=str, default="project.yml", help="file to describe FL project")
-#     parser.add_argument("-w", "--workspace", type=str, default=".", help="directory used by provision")
-#     parser.add_argument("-c", "--custom_folder", type=str, default=".", help="additional folder to load python codes")
-#     parser.add_argument("--add_user", type=str, default="", help="yaml file for added user")
-#     parser.add_argument("--add_client", type=str, default="", help="yaml file for added client")
-
 def define_provision_parser(parser):
-    parser.add_argument("-p", "--project_file", type=str, default="/workspace/nautilus/nautilus/workspace/provision/project.yml", help="file to describe FL project")
-    parser.add_argument("-w", "--workspace", type=str, default="/workspace/nautilus/nautilus/workspace/provision", help="directory used by provision")
+    parser.add_argument("-p", "--project_file", type=str, default="project.yml", help="file to describe FL project")
+    parser.add_argument("-w", "--workspace", type=str, default="../../workspace/provision", help="directory used by provision")
     parser.add_argument("-c", "--custom_folder", type=str, default=".", help="additional folder to load python codes")
     parser.add_argument("--add_user", type=str, default="", help="yaml file for added user")
     parser.add_argument("--add_client", type=str, default="", help="yaml file for added client")
@@ -59,10 +51,8 @@ def handle_provision(args):
     current_path = os.getcwd()
     custom_folder_path = os.path.join(current_path, args.custom_folder)
     sys.path.append(custom_folder_path)
-
-    # main project file
     project_file = args.project_file
-    current_project_yml = "/home/cotlab/Nautilus/nautilus/nautilus/workspace/provision/project.yml"
+    current_project_yml = os.path.join(current_path, "project.yml")
 
     if has_no_arguments() and not os.path.exists(current_project_yml):
         files = {"1": "ha_project.yml", "2": "dummy_project.yml", "3": None}
@@ -85,22 +75,10 @@ def handle_provision(args):
         exit(0)
 
     workspace = args.workspace
-    # workspace_full_path = os.path.join(current_path, workspace)
-    workspace_full_path = workspace
-    # project_full_path = os.path.join(current_path, project_file)
-    project_full_path = project_file
-    
-    ### local space
-    workspace_full_path = "/home/cotlab/Nautilus/nautilus/nautilus/workspace/provision"
-    project_full_path = "/home/cotlab/Nautilus/nautilus/nautilus/workspace/provision/project.yml"
-    
-    ### docker container space
-    #workspace_full_path = "/workspace/nautilus/nautilus/workspace/provision"
-    #project_full_path = "/workspace/nautilus/nautilus/workspace/provision/project.yml"
+    workspace_full_path = os.path.join(current_path, workspace)
+
+    project_full_path = os.path.join(current_path, project_file)
     print(f"Project yaml file: {project_full_path}.")
-    """
-    /workspace/nautilus/nautilus/api/etc# python nt_provision.py --workspace "/workspace/nautilus/nautilus/api/etc/provisioning" --project_file "/workspace/nautilus/nautilus/api/etc/provisioning/project.yml"
-    """
 
     add_user_full_path = os.path.join(current_path, args.add_user) if args.add_user else None
     add_client_full_path = os.path.join(current_path, args.add_client) if args.add_client else None
@@ -135,54 +113,33 @@ def prepare_builders(project_dict):
     return builders
 
 
-def _must_get(participant_def: dict, key: str):
-    v = participant_def.get(key)
-    if not v:
-        raise ValueError(f"missing property '{key}' from participant definition")
-    return v
-
-
 def prepare_project(project_dict, add_user_file_path=None, add_client_file_path=None):
-    api_version = project_dict.get(PropKey.API_VERSION)
+    api_version = project_dict.get("api_version")
     if api_version not in [3]:
         raise ValueError(f"API version expected 3 but found {api_version}")
-    project_name = project_dict.get(PropKey.NAME)
-    if len(project_name) > 63:
-        print(f"Project name {project_name} is longer than 63.  Will truncate it to {project_name[:63]}.")
-        project_name = project_name[:63]
-        project_dict[PropKey.NAME] = project_name
-    project_description = project_dict.get(PropKey.DESCRIPTION, "")
-    project = Project(name=project_name, description=project_description, props=project_dict)
-    participant_defs = project_dict.get("participants")
-
+    project_name = project_dict.get("name")
+    project_description = project_dict.get("description", "")
+    participants = list()
+    for p in project_dict.get("participants"):
+        participants.append(Participant(**p))
     if add_user_file_path:
-        add_extra_users(add_user_file_path, participant_defs)
-
+        add_extra_users(add_user_file_path, participants)
     if add_client_file_path:
-        add_extra_clients(add_client_file_path, participant_defs)
-
-    for p in participant_defs:
-        participant_type = _must_get(p, "type")
-        name = _must_get(p, "name")
-        org = _must_get(p, "org")
-        if participant_type == ParticipantType.SERVER:
-            project.set_server(name, org, props=p)
-        elif participant_type == ParticipantType.CLIENT:
-            project.add_client(name, org, p)
-        elif participant_type == ParticipantType.ADMIN:
-            project.add_admin(name, org, p)
-        elif participant_type == ParticipantType.OVERSEER:
-            project.set_overseer(name, org, p)
-        else:
-            raise ValueError(f"invalid participant_type '{participant_type}'")
+        add_extra_clients(add_client_file_path, participants)
+    project = Project(name=project_name, description=project_description, participants=participants)
+    n_servers = len(project.get_participants_by_type("server", first_only=False))
+    if n_servers > 2:
+        raise ValueError(
+            f"Configuration error: Expect 2 or 1 server to be provisioned. project contains {n_servers} servers."
+        )
     return project
 
 
-def add_extra_clients(add_client_file_path, participant_defs):
+def add_extra_clients(add_client_file_path, participants):
     try:
         extra = load_yaml(add_client_file_path)
         extra.update({"type": "client"})
-        participant_defs.append(extra)
+        participants.append(Participant(**extra))
     except Exception as e:
         print("** Error during adding client **")
         print("The yaml file format is")
@@ -190,11 +147,11 @@ def add_extra_clients(add_client_file_path, participant_defs):
         exit(0)
 
 
-def add_extra_users(add_user_file_path, participant_defs):
+def add_extra_users(add_user_file_path, participants):
     try:
         extra = load_yaml(add_user_file_path)
         extra.update({"type": "admin"})
-        participant_defs.append(extra)
+        participants.append(Participant(**extra))
     except Exception:
         print("** Error during adding user **")
         print("The yaml file format is")
@@ -207,6 +164,5 @@ def nt_provision():
     define_provision_parser(parser)
     args = parser.parse_args()
     handle_provision(args)
-    
 
 nt_provision()

@@ -93,6 +93,17 @@ def nt_calculate_avg_model(client_data):
     
     return avg_params
 
+def nt_calculate_weighted_avg_model(client_data,weight_list):
+    num_clients = len(client_data)
+    avg_params = {k: torch.zeros_like(v) for k, v in client_data[0][2].items()}
+
+    for idx, client in enumerate(client_data):
+        weight_val = weight_list[idx]
+        for k, param in client[2].items(): 
+            avg_params[k] += weight_val*(param / num_clients)
+    
+    return avg_params
+
 def nt_make_client_combination_avg_model(client_data):
     # Nautilus client combination average model
     # client_data : [client_name, accuracy, param, data_size]
@@ -125,6 +136,8 @@ def nt_calculate_test_accuracy(model, model_weight, DEVICE, test_data):
 
 
 
+
+
 def nt_calculate_client_leave_one_out(model, client_data, DEVICE, test_data):
     total_avg_model = nt_calculate_avg_model(client_data)
     client_combination_avg_model = nt_make_client_combination_avg_model(client_data)
@@ -146,9 +159,29 @@ def nt_calculate_client_leave_one_out(model, client_data, DEVICE, test_data):
 
     return client_contrib_res
 
+def nt_calculate_client_weighted_leave_one_out(model, client_data, DEVICE,weight_list, test_data):
+    total_avg_model = nt_calculate_weighted_avg_model(client_data, weight_list)
+    client_combination_avg_model = nt_make_client_combination_avg_model(client_data)
+
+    total_model_accuracy = nt_calculate_test_accuracy(model, total_avg_model, DEVICE, test_data)
+    loo_comparision_list = []
+    
+    for client in client_combination_avg_model:
+        client_name = client[0]
+        client_accuracy = nt_calculate_test_accuracy(model, client[1], DEVICE, test_data)
+        diff_accuracy = total_model_accuracy - client_accuracy
+        loo_comparision_list.append([client_name, diff_accuracy])
+    
+    sorted_loo_comparision_list = sorted(loo_comparision_list, key = lambda x: x[1])
+
+    client_contrib_res = {}
+    for idx, res in enumerate(sorted_loo_comparision_list):
+        client_contrib_res[idx+1] = [res[0], res[1]]
+
+    return client_contrib_res
 
 
-def nt_contrib_loo(initial_model, results, DEVICE, test_data, mode = None):
+def nt_contrib_loo(initial_model, results, DEVICE, test_data, mode = None, weight_list = None):
     # nautilus contrib estimation method
     # basic : client contribution evaluation via leave one out (Even weight)
     # weighted : client contribution evaluation via weighted 
@@ -168,8 +201,22 @@ def nt_contrib_loo(initial_model, results, DEVICE, test_data, mode = None):
         # basic mode
         client_data = nt_get_client_information(results)
         client_model = initial_model
-        client_contrib_res = nt_calculate_client_leave_one_out(client_model, client_data, DEVICE, test_data)
-        print('loo result :', client_contrib_res)
+        raw_result = nt_calculate_client_leave_one_out(client_model, client_data, DEVICE, test_data)
+        for v in raw_result.values():
+            client_name, score = v
+            client_contrib_res[client_name] = score
+
+        print(f'{mode} loo result :', client_contrib_res)
+        return client_contrib_res
+    elif mode == 'weighted':
+        # weighted mode
+        if weight_list == None:
+            print('[ Nautilus SYS ] : Error : weight_list is not defined')
+            weight_list = [1 for _ in range(len(results))]
+        client_data = nt_get_client_information(results)
+        client_model = initial_model
+        client_contrib_res = nt_calculate_client_weighted_leave_one_out(client_model, client_data, DEVICE, weight_list, test_data)
+        print('weighted loo result :', client_contrib_res)
         return client_contrib_res
     
             

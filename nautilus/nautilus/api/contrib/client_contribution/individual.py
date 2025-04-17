@@ -51,21 +51,23 @@ from nvflare.fuel.utils.validation_utils import check_non_negative_int, check_po
 from nvflare.security.logging import secure_format_exception
 
 from nvflare.app_opt.pt.job_config.base_fed_job import BaseFedJob
-
+import torch
+import numpy as np
 
 
 def nt_get_client_information(results):
     
     client_training_result_data = []
-    
+    print('results : ',results)
     for _result in results:
         tmp_meta = _result.meta
         tmp_client_name = tmp_meta.get("client_name", AppConstants.CLIENT_UNKNOWN)
         tmp_current_round = tmp_meta.get("NUM_STEPS_CURRENT_ROUND")
         tmp_accuracy = tmp_meta.get("accuracy")
         tmp_metric = tmp_meta.get("metric")
+        tmp_param = _result.params
         
-        tmp_append_data_list = [tmp_client_name, tmp_current_round, tmp_accuracy, tmp_metric]
+        tmp_append_data_list = [tmp_client_name, tmp_current_round, tmp_accuracy, tmp_metric, tmp_param]
         client_training_result_data.append(tmp_append_data_list)
     
     return client_training_result_data
@@ -77,8 +79,38 @@ def nt_calculate_client_contrib_total(res):
         total_contrib += tmp_res[2]
     return total_contrib
 
+def nt_calculate_avg_model(client_data):
+    num_clients = len(client_data)
+    avg_params = {k: torch.zeros_like(v) for k, v in client_data[0][-1].items()}
 
-def nt_calculate_client_contrib(data, mode = None):
+    for idx, client in enumerate(client_data):
+        for k, param in client[2].items(): 
+            avg_params[k] += param / num_clients
+    
+    return avg_params
+
+def nt_calculate_test_accuracy(model, model_weight, DEVICE, test_data):
+    test_model = model
+    model_weight_tensor = {k: torch.tensor(v) for k, v in model_weight.items()}
+    test_model.load_state_dict(model_weight_tensor)
+    test_model.to(DEVICE)
+
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for data in test_data:
+            images, labels = data[0].to(DEVICE), data[1].to(DEVICE)
+            outputs = test_model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    
+    return 100 * correct / total
+
+
+
+def nt_calculate_client_contrib(client_model, data, DEVICE, testloader, mode = None):
     # nautilus contrib estimation method
     # mode is calculate client contrib expression method
     # norm : client contrib calculation -> 0 ~ 1
@@ -86,10 +118,11 @@ def nt_calculate_client_contrib(data, mode = None):
     # loss : client contrib estimation via loss -> 0.322, 0.112, ...
     # reverse : client contrib estimation via reverse -> 5,4,3,2,1
     # rank : client contrib estimation via rank -> 1,2,3,4,5 
-    mode_list = ['norm', 'acc', 'loss', 'reverse', 'rank']
+    mode_list = ['norm', 'acc', 'loss', 'reverse', 'rank', 's_norm']
 
     client_contrib_res = {}
-    
+    client_model = client_model
+
     if mode == '' or mode == None:
         mode = 'acc'
         print('[Nautilus SYS] : Mode is not defined, Set Accuracy Mode')
@@ -109,8 +142,19 @@ def nt_calculate_client_contrib(data, mode = None):
         
         print('here client contrib_ res : ',client_contrib_res)
         return client_contrib_res
-        
-        
+    
+    elif mode == 's_norm':
+        # s_norm mode
+        tmp_s_norm_dict = {}
+        for x in range(len(data)):
+            client_name = data[x][0]
+            client_model_accuracy = nt_calculate_test_accuracy(client_model, data[x][-1], DEVICE, testloader)
+            tmp_s_norm_dict[client_name] = client_model_accuracy
+
+        print('s_norm result :', tmp_s_norm_dict)
+        return tmp_s_norm_dict
+
+
     elif mode == 'acc':
         # acc mode
         sorted_data = sorted(data, key=lambda x: x[2], reverse=True)
@@ -158,11 +202,13 @@ def nt_calculate_client_contrib(data, mode = None):
 
 
 
-def nt_contrib_individual(results, mode=None):
+def nt_contrib_individual(initial_model, results, DEVICE, testloader, mode=None):
     # client training result decomposition
     # client data generation
+    client_model = initial_model
+
     client_training_result_data = nt_get_client_information(results)
-    client_contrib_res = nt_calculate_client_contrib(client_training_result_data, mode)
+    client_contrib_res = nt_calculate_client_contrib(client_model, client_training_result_data, DEVICE, testloader, mode)
 
     return client_contrib_res
 

@@ -1,5 +1,4 @@
-# shap contribution evaluation method
-
+# leastcore method
 
 from typing import List, Optional
 
@@ -53,14 +52,18 @@ from nvflare.security.logging import secure_format_exception
 from nvflare.app_opt.pt.job_config.base_fed_job import BaseFedJob
 import torch
 import numpy as np
+
 import itertools
+import numpy as np
+import torch
 from math import factorial
+from typing import List
+from pulp import LpProblem, LpVariable, lpSum, LpMinimize, LpStatus, value
+
+from nvflare.app_common.app_constant import AppConstants
 
 def nt_get_client_information(results):
-    # loo client_information
-
     client_training_result_data = []
-
     for _result in results:
         tmp_meta = _result.meta
         tmp_client_name = tmp_meta.get("client_name", AppConstants.CLIENT_UNKNOWN)
@@ -71,11 +74,8 @@ def nt_get_client_information(results):
         if isinstance(tmp_param, dict):
             tmp_param = {k: torch.tensor(v) if isinstance(v, np.ndarray) else v for k, v in tmp_param.items()}
 
-        # client_name, accuracy, param, data_size
         tmp_client_append_data = [tmp_client_name, tmp_accuracy, tmp_param, tmp_data_size]
-        
         client_training_result_data.append(tmp_client_append_data)
-    
     return client_training_result_data
 
 def nt_calculate_test_accuracy(model, model_weight, DEVICE, test_data):
@@ -86,7 +86,6 @@ def nt_calculate_test_accuracy(model, model_weight, DEVICE, test_data):
 
     correct = 0
     total = 0
-
     with torch.no_grad():
         for data in test_data:
             images, labels = data[0].to(DEVICE), data[1].to(DEVICE)
@@ -94,14 +93,13 @@ def nt_calculate_test_accuracy(model, model_weight, DEVICE, test_data):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-    
+
     return 100 * correct / total
 
 def create_client_combination(client_result_data):
     client_combination = []
     for r in range(1, len(client_result_data)+1):
         combos = list(itertools.combinations(client_result_data, r))
-        
         client_combination.extend(combos)
     return client_combination
 
@@ -111,60 +109,66 @@ def nt_calculate_client_combination_accuracy(initial_model, client_combination, 
     client_list = []
     for client in client_combination:
         for k, param in client[2].items():
-            comb_params[k] += param/div_len
+            comb_params[k] += param / div_len
         client_list.append(client[0])
     res = nt_calculate_test_accuracy(initial_model, comb_params, DEVICE, test_data)
-    #print([client_list, res])
     return [client_list, res]
-    
-def nt_calculate_avg_contrib(total_data):
+
+def nt_calculate_client_combination_weight_accuracy(initial_model, client_combination, DEVICE, test_data):
+    comb_params = {k: torch.zeros_like(v) for k, v in client_combination[0][2].items()}
+    total_data_size = sum([client[3] for client in client_combination])  # data_size 합
+    client_list = []
+
+    for client in client_combination:
+        weight = client[3] / total_data_size  # 가중치 = data 비율
+        for k, param in client[2].items():
+            comb_params[k] += param * weight
+        client_list.append(client[0])
+
+    res = nt_calculate_test_accuracy(initial_model, comb_params, DEVICE, test_data)
+    return [client_list, res]
+
+def nt_leastcore_contrib(total_data):
     performance_dict = {tuple(sorted(sites)): perf for sites, perf in total_data}
     all_sites = set()
     for sites, _ in total_data:
         all_sites.update(sites)
     all_sites = sorted(list(all_sites))
-    n = len(all_sites)
-    def shapley_value(target_site, all_sites, performance_dict):
-        phi = 0.0
-        N = set(all_sites)
-        for r in range(0, n):  
-            for S in itertools.combinations(N - {target_site}, r):
-                S = set(S)
-                S_with_i = tuple(sorted(S | {target_site}))
-                S_tuple = tuple(sorted(S))
-                v_S = performance_dict.get(S_tuple, 0)
-                v_S_with_i = performance_dict.get(S_with_i, 0)
-                weight = factorial(len(S)) * factorial(n - len(S) - 1) / factorial(n)
-                phi += weight * (v_S_with_i - v_S)
-        return phi
-    shapley_scores = {}
-    for site in all_sites:
-        shapley_scores[site] = shapley_value(site, all_sites, performance_dict)
-    return shapley_scores
 
+    problem = LpProblem("LeastCore", LpMinimize)
+    x = {c: LpVariable(f"x_{c}") for c in all_sites}
+    epsilon = LpVariable("epsilon", lowBound=0)
+    problem += epsilon
 
-def nt_contrib_shap(initial_model, results, DEVICE, test_data, mode = None):
-    # Nautilus shap contribution evaluation method
-    mode_list = ['basic','weighted']
+    for S in performance_dict:
+        v_s = performance_dict[S]
+        problem += lpSum([x[c] for c in S]) >= v_s - epsilon
 
-    #client_contrib_res = {}
-    
-    if mode == '' or mode == None:
+    v_all = performance_dict[tuple(all_sites)]
+    problem += lpSum([x[c] for c in all_sites]) == v_all
+
+    problem.solve()
+
+    leastcore_scores = {c: x[c].value() for c in all_sites}
+    print(f"LeastCore 상태: {LpStatus[problem.status]}")
+    print(f"최소 불만 (epsilon): {value(epsilon):.4f}")
+    return leastcore_scores
+
+def nt_contrib_leastcore(initial_model, results, DEVICE, test_data,mode=None):
+    client_data = nt_get_client_information(results)
+    comb_list = create_client_combination(client_data)
+    total_data = []
+    if mode == None:
         mode = 'basic'
-        print('[Nautilus SYS] : Mode is not defined, Set Basic Mode')
     
-    if mode not in mode_list:
-        print('[ Nautilus SYS ] : Error : mode is not defined')
-    
-    if mode == 'basic':
-        # basic mode
-        client_data = nt_get_client_information(results)
-        comb_list = create_client_combination(client_data)
-        total_data = []
+    if mode == 'basic:':
         for comb in comb_list:
             tmp_res = nt_calculate_client_combination_accuracy(initial_model, comb, DEVICE, test_data)
             total_data.append(tmp_res)
-        shap_score = nt_calculate_avg_contrib(total_data)
-        print(shap_score)
-        return shap_score
-    
+    elif mode == 'weighted':
+        for comb in comb_list:
+            tmp_res = nt_calculate_client_combination_weight_accuracy(initial_model, comb, DEVICE, test_data)
+            total_data.append(tmp_res)
+    leastcore_score = nt_leastcore_contrib(total_data)
+    print(leastcore_score)
+    return leastcore_score
