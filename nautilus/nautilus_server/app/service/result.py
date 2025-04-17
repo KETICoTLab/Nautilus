@@ -10,29 +10,19 @@ from fastapi import Request
 async def create_result(project_id, job_id, data, pool, request: Request, result_type: str):
     result_id = str(uuid.uuid4())[:8]
 
-    query = """
-    INSERT INTO results (result_id, data, creation_time, type, project_id, job_id)
-    VALUES ($1, $2::jsonb, NOW(), $3, $4, $5)
-    RETURNING *;
-    """
-
     # ✅ event_type과 data는 요청 객체에서 직접 사용
     event_type = data.event_type
     payload_data = data.data
 
-    # DB에 저장할 데이터는 payload_data만
-    json_data = json.dumps(payload_data)
-    row = await fetch_one(pool, query, result_id, json_data, result_type, project_id, job_id)
-
     # ⏱ 포맷된 타임스탬프 생성
-    creation_time = row["creation_time"].astimezone(KST)
-    formatted_time = creation_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    now = datetime.now(KST)
+    formatted_time = now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-    # ✅ WebSocket 알림 전송
+    # ✅ WebSocket 알림 전송용 메시지 구성
     message = json.dumps({
-        "event": event_type,  # 요청에서 직접 받은 값
+        "event": event_type,
         "result_id": result_id,
-        "data": payload_data,  # 요청 본문에서 받은 실제 내용
+        "data": payload_data,
         "timestamp": formatted_time,
         "project_id": project_id,
         "job_id": job_id
@@ -41,7 +31,28 @@ async def create_result(project_id, job_id, data, pool, request: Request, result
     print(f"✅ WebSocket message: {message}")
     await request.app.websocket_manager.broadcast(message)
 
-    # 응답 객체도 그대로 구성
+    # ⛔️ training_completed 이벤트는 DB에 저장하지 않음
+    if event_type == "training_completed":
+        return Result(
+            result_id=result_id,
+            data=payload_data,
+            creation_time=formatted_time,
+            project_id=project_id,
+            job_id=job_id,
+        )
+
+    # ✅ 그 외 이벤트는 DB 저장
+    query = """
+    INSERT INTO results (result_id, data, creation_time, type, project_id, job_id)
+    VALUES ($1, $2::jsonb, NOW(), $3, $4, $5)
+    RETURNING *;
+    """
+    json_data = json.dumps(payload_data)
+    row = await fetch_one(pool, query, result_id, json_data, result_type, project_id, job_id)
+
+    creation_time = row["creation_time"].astimezone(KST)
+    formatted_time = creation_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
     return Result(
         result_id=row["result_id"],
         data=payload_data,
@@ -49,7 +60,6 @@ async def create_result(project_id, job_id, data, pool, request: Request, result
         project_id=row["project_id"],
         job_id=row["job_id"],
     )
-
 
 async def get_result(project_id, job_id, pool, result_type: Optional[str] = None):
     # ✅ 조건에 따라 쿼리 분기

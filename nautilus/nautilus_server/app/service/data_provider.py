@@ -6,7 +6,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
-
+from app.config import HOST
 import sys
 
 # `nautilus` 디렉토리를 Python 경로에 추가
@@ -68,7 +68,7 @@ async def create_ansible_host_vars(host_information, data_provider_id):
         check=True
     )
     
-    run_join_playbook(ip_address, str(data_provider_id), str("master_node_ip"))#master pc ip적어줘야 함.
+    run_join_playbook(ip_address, str(data_provider_id), str(HOST))#master pc ip적어줘야 함.
     
     
 async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProviderResponse]:
