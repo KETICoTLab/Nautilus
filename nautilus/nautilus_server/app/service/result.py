@@ -16,7 +16,7 @@ async def create_result(project_id, job_id, data, pool, request: Request, result
 
     # ⏱ 포맷된 타임스탬프 생성
     now = datetime.now(KST)
-    formatted_time = now.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    formatted_time = now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
 
     # ✅ WebSocket 알림 전송용 메시지 구성
     message = json.dumps({
