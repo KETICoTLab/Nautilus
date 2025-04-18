@@ -23,7 +23,7 @@ async def create_result(project_id, job_id, data, pool, request: Request, result
         "event": event_type,
         "result_id": result_id,
         "data": payload_data,
-        "timestamp": formatted_time,
+        "creation_time": formatted_time,
         "project_id": project_id,
         "job_id": job_id
     }, default=str)
