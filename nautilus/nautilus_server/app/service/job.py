@@ -140,6 +140,10 @@ async def update_job(project_id: str, job_id: str, data: JobUpdate, pool) -> Opt
 
 
 async def delete_job(project_id: str, job_id: str, pool) -> bool:
+    # result 테이블 재 생성 시 코드 삭제 
+    delete_results_query = "DELETE FROM results WHERE job_id = $1 AND project_id = $2;"
+    await execute(pool, delete_results_query, job_id, project_id)
+    ####################################
     query = "DELETE FROM jobs WHERE job_id = $1;"
     result = await execute(pool, query, job_id)
     return result.endswith("DELETE 1")

@@ -90,10 +90,11 @@ CREATE TABLE jobs (
 );
 
 CREATE TABLE results (
-    job_id TEXT,  -- 작업 ID
-    project_id TEXT,  -- 프로젝트 ID (외래키)
-    result_id TEXT,
+    result_id TEXT PRIMARY KEY,
+    project_id TEXT,
+    job_id TEXT,
     type TEXT,
     data JSONB,
-    creation_time timestamp with time zone -- 생성 시간
+    creation_time TIMESTAMPTZ,
+    FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE CASCADE
 );

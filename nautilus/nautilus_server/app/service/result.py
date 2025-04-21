@@ -68,7 +68,7 @@ async def get_result(project_id, job_id, pool, result_type: Optional[str] = None
         SELECT result_id, data, creation_time, project_id, job_id
         FROM results
         WHERE type = $1 and project_id = $2 and job_id = $3
-        ORDER BY creation_time DESC limit 10;
+        ORDER BY creation_time DESC limit 100;
         """
         rows = await fetch_all(pool, query, result_type, project_id, job_id)
     else:
@@ -76,7 +76,7 @@ async def get_result(project_id, job_id, pool, result_type: Optional[str] = None
         SELECT result_id, data, creation_time, project_id, job_id
         FROM results
         WHERE project_id = $1 and job_id = $2
-        ORDER BY creation_time DESC limit 10;
+        ORDER BY creation_time DESC limit 100;
         """
         rows = await fetch_all(pool, query, project_id, job_id)
 
