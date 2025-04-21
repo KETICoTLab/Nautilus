@@ -49,3 +49,10 @@ async def delete_data_provider_data(data_provider_id: str, data_id: str, pool=De
     if not success:
         raise HTTPException(status_code=404, detail="Data Provider Not Found")
     return {"detail": "Deleted successfully"}
+
+@router.patch("/{data_provider_id}/datas/{data_id}")
+async def update_data_provider_data(data_provider_id: str, data_id: str, data: DataProviderDataCreate, pool=Depends(get_db_pool)):
+    dp = await service.update_data_provider_data(data_provider_id, data_id, data, pool)
+    if not dp:
+        raise HTTPException(status_code=404, detail="Data Provider Not Found")
+    return dp

@@ -87,15 +87,63 @@ async def get_data_provider(data_provider_id: str, pool) -> Optional[DataProvide
 
     return DataProviderResponse(**row_dict)
 
+
+from pydantic import ValidationError
+import json
+
 async def update_data_provider(data_provider_id: str, data: DataProviderCreate, pool) -> Optional[DataProvider]:
-    query = """
+    field_map = {
+        "data_provider_name": data.data_provider_name,
+        "description": data.description,
+        "tags": data.tags,
+        "creator_id": data.creator_id,
+        "train_code_path": data.train_code_path,
+        "train_data_path": data.train_data_path,
+    }
+
+    # ✅ host_information 처리
+    host_info = data.host_information
+    if host_info is not None:
+        if isinstance(host_info, str):
+            try:
+                host_info = HostInformation(**json.loads(host_info))
+            except (json.JSONDecodeError, ValidationError) as e:
+                raise ValueError(f"Invalid host_information format: {e}")
+        # ✅ PostgreSQL JSONB에 넣기 위해 문자열로 직렬화
+        field_map["host_information"] = host_info.json()
+
+    # ✅ 쿼리 동적 생성
+    set_clauses = []
+    values = []
+    idx = 1
+    for key, value in field_map.items():
+        if value is not None:
+            set_clauses.append(f"{key} = ${idx}")
+            values.append(value)
+            idx += 1
+
+    set_clauses.append("modification_time = NOW()")
+    values.append(data_provider_id)
+
+    query = f"""
     UPDATE data_providers
-    SET data_provider_name = $1, description = $2, tags = $3, creator_id = $4, host_information = $5, train_code_path = $6, train_data_path = $7, modification_time = NOW()
-    WHERE data_provider_id = $8
+    SET {', '.join(set_clauses)}
+    WHERE data_provider_id = ${idx}
     RETURNING *;
     """
-    row = await fetch_one(pool, query, data.data_provider_name, data.description, data.tags, data.creator_id, data.host_information, data.train_code_path, data.train_data_path, data_provider_id)
-    return DataProvider(**row) if row else None
+
+    row = await fetch_one(pool, query, *values)
+
+    # ✅ asyncpg.Record → dict 변환 후 처리
+    if row:
+        row_dict = dict(row)
+        if isinstance(row_dict.get("host_information"), str):
+            row_dict["host_information"] = HostInformation(**json.loads(row_dict["host_information"]))
+        return DataProvider(**row_dict)
+
+    return None
+
+
 
 async def delete_data_provider(data_provider_id: str, pool) -> bool:
     query = "DELETE FROM data_providers WHERE data_provider_id = $1;"
@@ -198,3 +246,33 @@ async def delete_data_provider_data(data_provider_id: str, data_id: str, pool) -
     result = await execute(pool, query, data_provider_id, data_id)
     return result.endswith("DELETE 1")
 
+
+async def update_data_provider_data(data_provider_id: str, data_id:str, data: DataProviderDataCreate, pool) -> Optional[DataProviderData]:
+    field_map = {
+        "item_code_id": data.item_code_id,
+        "data_name": data.data_name,
+        "description": data.description,
+        "data": data.data,
+    }
+
+    set_clauses = []
+    values = []
+    idx = 1
+    for key, value in field_map.items():
+        if value is not None:
+            set_clauses.append(f"{key} = ${idx}")
+            values.append(value)
+            idx += 1
+
+    # 마지막으로 data_id 조건 추가
+    values.append(data_id)
+    query = f"""
+    UPDATE data
+    SET {', '.join(set_clauses)}
+    WHERE data_id = ${idx}
+    RETURNING *;
+    """
+
+    row = await fetch_one(pool, query, *values)
+
+    return DataProviderData(**dict(row)) if row else None

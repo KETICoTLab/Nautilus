@@ -59,6 +59,10 @@ async def get_job(project_id: str, job_id: str, pool) -> Optional[Job]:
     return Job(**row) if row else None
 
 async def update_job(project_id: str, job_id: str, data: JobUpdate, pool) -> Optional[Job]:
+    # Step 0: 기존 job result 삭제
+    delete_results_query = "DELETE FROM results WHERE job_id = $1 AND project_id = $2;"
+    await execute(pool, delete_results_query, job_id, project_id)
+    
     # Step 1: 기존 job 불러오기
     existing_query = "SELECT * FROM jobs WHERE job_id = $1 AND project_id = $2"
     existing = await fetch_one(pool, existing_query, job_id, project_id)
