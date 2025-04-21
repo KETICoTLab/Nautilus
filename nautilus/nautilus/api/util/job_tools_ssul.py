@@ -630,6 +630,12 @@ class nt_FedAvg_Pack(nt_FedAvg):
             
             if contribution_method != None:
                 contrib_results = connect_contrib_evaluation(self.num_clients, contribution_method, initial_model, results, DEVICE, testloader, mode=None, weight_list=None)
+                # ✅ Softmax 방식으로 정규화
+                if contrib_results:
+                    import numpy as np
+                    exp_vals = {k: np.exp(v) for k, v in contrib_results.items()}
+                    total = sum(exp_vals.values())
+                    contrib_results = {k: (v / total) * 100 for k, v in exp_vals.items()}
             
             aggregate_results = self.aggregate(results, aggregate_fn=self.aggregate_fn)  
             model = self.update_model(model, aggregate_results)

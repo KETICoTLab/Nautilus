@@ -16,7 +16,7 @@ class CustomCIFAR10Dataset(Dataset):
         self.labels = []
 
         client_index = int(client_id.split("-")[1])
-        feature_cycles = [[0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 8], [8, 9, 0]]
+        feature_cycles = [[0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 8], [8, 9, 0]] # [[9, 0, 1, 2, 3, 4], [2, 3, 4, 5, 6, 7], [5, 6, 7, 8, 9, 0]]
         primary_classes = feature_cycles[client_index % len(feature_cycles)]
         print(f"[CustomDataset] Primary classes for {client_id}: {primary_classes}")
 
