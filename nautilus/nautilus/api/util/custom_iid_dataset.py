@@ -5,7 +5,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class IIDCustomCIFAR10Dataset(Dataset):
-    def __init__(self, root_dir, transform=None, sample_size=2500, mode='train', client_id=None, primary_ratio=0.9):
+    def __init__(self, root_dir, transform=None, sample_size=4000, mode='train', client_id=None, primary_ratio=0.9):
         self.root_dir = root_dir
         self.transform = transform
         self.mode = mode

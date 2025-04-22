@@ -82,22 +82,32 @@ async def get_result(project_id, job_id, pool, result_type: Optional[str] = None
         """
         rows = await fetch_all(pool, query, project_id, job_id)
 
-    print(f"rows: {rows}")
-    # ✅ client_name 별로 그룹화하여 최대 200개씩만 선택
-    grouped = defaultdict(list)
-    for row in rows:
-        data = json.loads(row["data"])
-        client_name = data.get("client_name")
-        if client_name and len(grouped[client_name]) < 200:
+    # ✅ 'client'인 경우 client_name 기준 200개 제한
+    if result_type == "client":
+        grouped = defaultdict(list)
+        for row in rows:
+            data = json.loads(row["data"])
+            client_name = data.get("client_name", "unknown")
+            if len(grouped[client_name]) < 200:
+                creation_time = row["creation_time"] or datetime.utcnow()
+                grouped[client_name].append(Result(
+                    result_id=row["result_id"],
+                    data=data,
+                    creation_time=creation_time,
+                    project_id=row["project_id"],
+                    job_id=row["job_id"]
+                ))
+        results = [res for client_results in grouped.values() for res in client_results]
+
+    # ✅ server는 모든 결과 반환
+    else:
+        for row in rows:
             creation_time = row["creation_time"] or datetime.utcnow()
-            grouped[client_name].append(Result(
+            results.append(Result(
                 result_id=row["result_id"],
-                data=data,
+                data=json.loads(row["data"]),
                 creation_time=creation_time,
                 project_id=row["project_id"],
                 job_id=row["job_id"]
             ))
-
-    # ✅ 최종 리스트로 합치기
-    results = [res for client_results in grouped.values() for res in client_results]
     return results
