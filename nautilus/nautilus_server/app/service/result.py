@@ -82,6 +82,8 @@ async def get_result(project_id, job_id, pool, result_type: Optional[str] = None
         """
         rows = await fetch_all(pool, query, project_id, job_id)
 
+
+    results = []
     # ✅ 'client'인 경우 client_name 기준 200개 제한
     if result_type == "client":
         grouped = defaultdict(list)
