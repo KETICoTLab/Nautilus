@@ -1,3 +1,9 @@
+# custom_dataset.py
+import os
+import random
+from PIL import Image
+from torch.utils.data import Dataset
+
 class IIDCustomCIFAR10Dataset(Dataset):
     def __init__(self, root_dir, transform=None, sample_size=5000, mode='train'):
         self.root_dir = root_dir
