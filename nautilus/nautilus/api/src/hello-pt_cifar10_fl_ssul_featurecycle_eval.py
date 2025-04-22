@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../..")))
 from util.api_tools import http_post
-from util.custom_dataset import CustomCIFAR10Dataset
+from util.custom_iid_dataset import IIDCustomCIFAR10Dataset
 import torch
 from simple_network import SimpleNetwork
 from torch import nn
@@ -20,7 +20,6 @@ import time
 
 DATASET_PATH = "/tmp/nvflare/data/cifar10_custom_dataset"
 
-# evaluate 함수 추가
 def evaluate(model, testloader, device, loss_fn):
     model.to(device)
     model.eval()
@@ -55,7 +54,6 @@ def extract_feature_embedding(model, dataloader, device, max_batches=10):
             x = model(images)
             features.append(x.view(x.size(0), -1).cpu())
     return torch.cat(features, dim=0)
-
 def get_resnet18_feature_extractor():
     base_model = resnet18(pretrained=True)
     modules = list(base_model.children())[:-1]  # remove final FC
@@ -65,8 +63,8 @@ def get_resnet18_feature_extractor():
         nn.Flatten()  # output shape: (batch, 512)
     )
 
-def main(server_url: str, num_local_epoch: int):
-    batch_size = 4
+def main(server_url: str, num_local_epoch: int, project_id: str):
+    batch_size = 32
     epochs = num_local_epoch
     lr = 0.01
     model = SimpleNetwork()
@@ -84,7 +82,7 @@ def main(server_url: str, num_local_epoch: int):
     client_name = sys_info["site_name"]
     tmp_model = get_resnet18_feature_extractor()
 
-    train_dataset = CustomCIFAR10Dataset(
+    train_dataset = IIDCustomCIFAR10Dataset(
         root_dir=os.path.join(DATASET_PATH, "train"),
         transform=transforms,
         mode="train",
@@ -92,14 +90,20 @@ def main(server_url: str, num_local_epoch: int):
     )
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = CustomCIFAR10Dataset(
+    test_dataset = IIDCustomCIFAR10Dataset(
         root_dir=os.path.join(DATASET_PATH, "test"),
         transform=transforms,
         mode="test",
         client_id=client_name,
     )
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    
+    print(f"[{client_name}] TRAIN LABEL DISTRIBUTION:")
+    print(Counter(train_dataset.labels))
 
+    print(f"[{client_name}] TEST LABEL DISTRIBUTION:")
+    print(Counter(test_dataset.labels))
+    
     summary_writer = SummaryWriter()
 
     while flare.is_running():
@@ -118,10 +122,11 @@ def main(server_url: str, num_local_epoch: int):
                 optimizer.step()
 
             # evaluation 
-            # 각 epoch 후 local_accuracy 및 local_loss 평가
             local_accuracy, local_loss = evaluate(model, test_loader, device, loss)
             payload = {
+                "event_type": "client_result_created",
                 "data": {
+                    "project_id": project_id,
                     "client_name": client_name,
                     "epoch": epoch,
                     "local_accuracy": local_accuracy,
@@ -132,12 +137,10 @@ def main(server_url: str, num_local_epoch: int):
 
             print(f"\n[CLIENT]\nPOST > {server_url}\n payload > {payload}\n")
             if response:
-                print(f"Results 수신 완료: {response}")
+                print(f"Results : {response}")
             else:
-                print("서버로부터 응답 없음.")
+                print("else) Results")
 
-
-        # 성능평가 후 accur 보내기
 
         feature_embed = extract_feature_embedding(tmp_model, train_loader, device)  # shape (N, D)
 
@@ -156,14 +159,12 @@ def main(server_url: str, num_local_epoch: int):
             },
         )
         flare.send(output_model)
-                                       
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run FL client with optional server_url")
     parser.add_argument("--server_url", type=str, required=True, help="Server URL to send results to")
-    parser.add_argument("--num_local_epoch", type=int, default=2, help="Server URL to send results to")
+    parser.add_argument("--num_local_epoch", type=int, default=2, help="num_local_epoch")
     parser.add_argument("--project_id", type=str, required=True, help="project_id")
-
     args = parser.parse_args()
 
-    main(server_url=args.server_url, num_local_epoch=args.num_local_epoch)
-
+    main(server_url=args.server_url, num_local_epoch=args.num_local_epoch, project_id=args.project_id)
