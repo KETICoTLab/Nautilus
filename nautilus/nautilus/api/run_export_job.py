@@ -1,6 +1,6 @@
 from util.job_tools_ssul import nt_Job_controller
 from nvflare.job_config.script_runner import ScriptRunner
-from client_test import SimpleNetwork
+from src.simple_network import SimpleNetwork
 import torch
 import torchvision
 from torchvision import transforms

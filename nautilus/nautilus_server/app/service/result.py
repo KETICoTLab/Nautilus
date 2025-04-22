@@ -6,6 +6,8 @@ KST = timezone(timedelta(hours=9))
 import uuid
 import json
 from fastapi import Request
+from collections import defaultdict
+
 
 async def create_result(project_id, job_id, data, pool, request: Request, result_type: str):
     result_id = str(uuid.uuid4())[:8]
@@ -67,7 +69,7 @@ async def get_result(project_id, job_id, pool, result_type: Optional[str] = None
         query = """
         SELECT result_id, data, creation_time, project_id, job_id
         FROM results
-        WHERE type = $1 and project_id = $2 and job_id = $3
+        WHERE type = $1 AND project_id = $2 AND job_id = $3
         ORDER BY creation_time DESC;
         """
         rows = await fetch_all(pool, query, result_type, project_id, job_id)
@@ -75,21 +77,27 @@ async def get_result(project_id, job_id, pool, result_type: Optional[str] = None
         query = """
         SELECT result_id, data, creation_time, project_id, job_id
         FROM results
-        WHERE project_id = $1 and job_id = $2
+        WHERE project_id = $1 AND job_id = $2
         ORDER BY creation_time DESC;
         """
         rows = await fetch_all(pool, query, project_id, job_id)
 
-    results = []
+    print(f"rows: {rows}")
+    # ✅ client_name 별로 그룹화하여 최대 200개씩만 선택
+    grouped = defaultdict(list)
     for row in rows:
-        creation_time = row["creation_time"] or datetime.utcnow()
+        data = json.loads(row["data"])
+        client_name = data.get("client_name")
+        if client_name and len(grouped[client_name]) < 200:
+            creation_time = row["creation_time"] or datetime.utcnow()
+            grouped[client_name].append(Result(
+                result_id=row["result_id"],
+                data=data,
+                creation_time=creation_time,
+                project_id=row["project_id"],
+                job_id=row["job_id"]
+            ))
 
-        results.append(Result(
-            result_id=row["result_id"],
-            data=json.loads(row["data"]),
-            creation_time=creation_time,
-            project_id=row["project_id"],
-            job_id=row["job_id"]
-        ))
-
+    # ✅ 최종 리스트로 합치기
+    results = [res for client_results in grouped.values() for res in client_results]
     return results
