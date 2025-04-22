@@ -90,10 +90,8 @@ def main(server_url: str, num_local_epoch: int):
         mode="train",
         client_id=client_name,
     )
-
-
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    #test_loader 추가
+
     test_dataset = CustomCIFAR10Dataset(
         root_dir=os.path.join(DATASET_PATH, "test"),
         transform=transforms,
@@ -102,8 +100,6 @@ def main(server_url: str, num_local_epoch: int):
     )
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    
-    
     summary_writer = SummaryWriter()
 
     while flare.is_running():
@@ -120,7 +116,6 @@ def main(server_url: str, num_local_epoch: int):
                 cost = loss(predictions, labels)
                 cost.backward()
                 optimizer.step()
-                break
 
             # evaluation 
             # 각 epoch 후 local_accuracy 및 local_loss 평가
