@@ -18,7 +18,7 @@ from core.communicate.validation import (
     execute_command
 )
 from core.communicate.k8s import (
-    get_pod_name_by_deployment
+    get_pod_name_by_deployment,
     create_nautilus_service
 )
 
