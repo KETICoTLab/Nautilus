@@ -14,12 +14,12 @@ from util.auto_save.utils import (
 from core.communicate.validation import (
     run_ansible_playbook,
     apply_nautilus_deployment,
-    copy_local_to_container,
     execute_command
 )
 from core.communicate.k8s import (
     get_pod_name_by_deployment,
-    create_nautilus_service
+    create_nautilus_service,
+    copy_to_container
 )
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -78,10 +78,10 @@ def main(config_name):
         print(f"apply_nautilus_deployment done..")
 
         print(f"pod_full_name searching for clients")
-        pod_full_name = get_pod_name_by_deployment(namespace, pod_name)
+        pod_full_name = get_pod_name_by_deployment(pod_name)
         print(f"pod_full_name: {pod_full_name}")
         # 3. Train 파일 컨테이너에 복사
-        copy_local_to_container(pod_name=pod_full_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
+        copy_to_container(pod_name=pod_full_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
         print(f"copy_local_to_container done..")
 '''          
     # 4. simulation 실행 - pass?

@@ -3,7 +3,7 @@ from typing import Optional
 import subprocess
 import shlex
 from kubernetes.stream import stream
-
+import time
 # def get_kubernetes_nodes():
 #     # Kubernetes 클라이언트 구성을 로드합니다 (로컬 kubeconfig 파일 사용)
 #     config.load_kube_config()
@@ -178,19 +178,23 @@ def list_namespaced_pod(namespace: str):
     """특정 네임스페이스에서 Pod 목록 조회"""
     return v1.list_namespaced_pod(namespace)
 
-def get_pod_name_by_deployment(deployment_name: str, namespace: str = "nautilus"):
-    """Deployment가 생성한 Pod의 이름을 가져오는 함수"""
+def get_pod_name_by_deployment(deployment_name: str, namespace: str = "nautilus", retry: int = 5, wait: int = 3):
+    """Deployment가 생성한 Pod의 이름을 가져오는 함수 (재시도 포함)"""
+    v1 = client.CoreV1Api()
 
-    # 해당 Deployment의 Pod 목록 조회
-    pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector=f"app={namespace}")
-    for pod in pod_list.items:
-        print(f"for pod in pod_list.items: {pod.metadata.name}")
-        if pod.metadata.name.startswith(deployment_name):
-            print(f"\n\n[return] {deployment_name} pod.metadata.name: {pod.metadata.name}\n\n")
-            return pod.metadata.name  # 가장 먼저 찾은 Pod 반환
-    
-    print(f"\n\n[Return] NONE\n\n")
-    return None  # Pod를 찾지 못한 경우
+    for attempt in range(retry):
+        pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector="app=nautilus")
+        for pod in pod_list.items:
+            pod_name = pod.metadata.name
+            if pod_name.startswith(deployment_name):
+                print(f"[✅ found] pod: {pod_name}")
+                return pod_name
+
+        print(f"[{attempt+1}/{retry}] pod for '{deployment_name}' not found yet, retrying in {wait}s...")
+        time.sleep(wait)
+
+    print(f"[❌ failed] No pod found for deployment '{deployment_name}' after {retry} retries.")
+    return None
 
 def list_pods_by_deployment(deployment_name: str, namespace: str = "nautilus"):
     """Deployment가 생성한 모든 Pod의 이름을 가져오는 함수"""
@@ -286,8 +290,8 @@ def create_nautilus_service(
     
     if ports is None:
         ports = [
-            {"port": 8002, "targetPort": 8002, "protocol": "TCP"},
-            {"port": 8003, "targetPort": 8003, "protocol": "TCP"}
+            {"name": "fed", "port": 8002, "targetPort": 8002, "protocol": "TCP"},
+            {"name": "admin", "port": 8003, "targetPort": 8003, "protocol": "TCP"}
         ]
     
     service_ports = [
@@ -493,6 +497,7 @@ def copy_to_container(pod_name: str, namespace: str, local_file_path: str, conta
     :param container_path: 컨테이너 내에서 복사할 대상 경로
     :param type: "file" 또는 "folder" (기본값: "file")
     """
+    print(f"copy_local_to_container: namespace: {namespace}, pod_name: {pod_name}, local_file_path: {local_file_path}, container_path: {container_path}, type: {type}")
     try:
         if type == "file":
             command = [
