@@ -52,6 +52,7 @@ def main(config_name):
     # 서버용 Service 생성 (mylocalhost DNS 제공)
     create_nautilus_service(
         service_name="mylocalhost",
+        namespace = "nautilus"
         selector_labels={"app": "nautilus"}
     )
     
@@ -81,7 +82,7 @@ def main(config_name):
         pod_full_name = get_pod_name_by_deployment(pod_name)
         print(f"pod_full_name: {pod_full_name}")
         # 3. Train 파일 컨테이너에 복사
-        copy_to_container(pod_name=pod_full_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
+        copy_to_container(container_name=pod_name, pod_name=pod_full_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
         print(f"copy_local_to_container done..")
 '''          
     # 4. simulation 실행 - pass?

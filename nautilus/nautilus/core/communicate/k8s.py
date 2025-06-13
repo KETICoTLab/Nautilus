@@ -286,8 +286,6 @@ def create_nautilus_service(
     namespace: str = "nautilus",
     ports: list[dict] = None
 ):
-    """Kubernetes ClusterIP Service 생성 함수"""
-    
     if ports is None:
         ports = [
             {"name": "fed", "port": 8002, "targetPort": 8002, "protocol": "TCP"},
@@ -295,14 +293,18 @@ def create_nautilus_service(
         ]
     
     service_ports = [
-        client.V1ServicePort(port=p["port"], target_port=p["targetPort"], protocol=p["protocol"])
-        for p in ports
+        client.V1ServicePort(
+            name=p["name"],
+            port=p["port"],
+            target_port=p["targetPort"],
+            protocol=p["protocol"]
+        ) for p in ports
     ]
-    
+
     service = client.V1Service(
         metadata=client.V1ObjectMeta(name=service_name),
         spec=client.V1ServiceSpec(
-            selector=selector_labels,
+            selector=selector_labels,  # 예: {"app": "nautilus"}
             ports=service_ports,
             type="ClusterIP"
         )
@@ -310,12 +312,10 @@ def create_nautilus_service(
 
     try:
         v1.create_namespaced_service(namespace=namespace, body=service)
-        print(f"✅ Service '{service_name}' created in namespace '{namespace}'")
+        print(f"✅ Service '{service_name}' created successfully")
     except client.exceptions.ApiException as e:
-        if e.status == 409:
-            print(f"⚠️ Service '{service_name}' already exists")
-        else:
-            print(f"❌ Failed to create service '{service_name}': {e}")
+        print(f"❌ Failed to create service: {e}")
+
 
 
 def create_client_deployment(project_id: str ,site: int, node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1, use_gpu: bool = True):
@@ -487,33 +487,38 @@ def connect_get_namespaced_service_proxy(namespace: str, service_name: str):
     """특정 Service에 Proxy 연결"""
     return v1.connect_get_namespaced_service_proxy(service_name, namespace)
 
-def copy_to_container(pod_name: str, namespace: str, local_file_path: str, container_path: str, type: str = "file"):
+def copy_to_container(
+    pod_name: str,
+    namespace: str,
+    local_file_path: str,
+    container_path: str,
+    type: str = "file",
+    container_name: str = None  # 🔍 추가
+):
     """
     주어진 파일을 Kubernetes Pod 내 컨테이너로 복사하는 함수.
-    
+
     :param pod_name: 파일을 복사할 Pod의 이름
     :param namespace: Pod가 속한 namespace
     :param local_file_path: 로컬 시스템에서 복사할 파일 경로
     :param container_path: 컨테이너 내에서 복사할 대상 경로
     :param type: "file" 또는 "folder" (기본값: "file")
+    :param container_name: 컨테이너 이름 명시 (선택적)
     """
-    print(f"copy_local_to_container: namespace: {namespace}, pod_name: {pod_name}, local_file_path: {local_file_path}, container_path: {container_path}, type: {type}")
+    print(f"copy_to_container: namespace: {namespace}, pod_name: {pod_name}, local_file_path: {local_file_path}, container_path: {container_path}, type: {type}")
+
     try:
-        if type == "file":
-            command = [
-                "kubectl", "cp", local_file_path,
-                f"{namespace}/{pod_name}:{container_path}"
-            ]
-        elif type == "folder":
-            command = [
-                "kubectl", "cp", "-r", local_file_path,
-                f"{namespace}/{pod_name}:{container_path}"
-            ]
-        else: 
-            print(f"[ERROR] Undefined type: {type}")
-            return
-        
-        print(f"[INFO] Running command: {' '.join(command)}")  # 디버깅용 로그 추가
+        command = ["kubectl", "cp"]
+
+        if container_name:
+            command += ["-c", container_name]
+
+        if type == "folder":
+            command += ["-r"]
+
+        command += [local_file_path, f"{namespace}/{pod_name}:{container_path}"]
+
+        print(f"[INFO] Running command: {' '.join(command)}")
         subprocess.run(command, check=True)
         print(f"[SUCCESS] File successfully copied to {pod_name} in container!")
 
@@ -521,7 +526,6 @@ def copy_to_container(pod_name: str, namespace: str, local_file_path: str, conta
         print(f"[ERROR] File copy failed: {e}")
         print(f"[DEBUG] Check if pod exists: kubectl get pods -n {namespace}")
         print(f"[DEBUG] Check if namespace exists: kubectl get ns")
-        
         
 if __name__ == "__main__":
     f = open('api_result.json', 'w')
