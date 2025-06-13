@@ -194,8 +194,6 @@ def get_pod_name_by_deployment(deployment_name: str, namespace: str = "nautilus"
 
 def list_pods_by_deployment(deployment_name: str, namespace: str = "nautilus"):
     """Deployment가 생성한 모든 Pod의 이름을 가져오는 함수"""
-    config.load_kube_config()  # 쿠버네티스 클러스터 설정 로드
-
     # 해당 Deployment의 Pod 목록 조회
     pod_list = v1.list_namespaced_pod(namespace=namespace, label_selector=f"app={deployment_name}")
 
@@ -276,6 +274,45 @@ def create_deployment(namespace: str, name: str, image: str, replicas: int = 1, 
         print(f"✅ Deployment '{name}' is created in namespace '{namespace}'.")
     except client.ApiException as e:
         print(f"❌ Deployment creation failed: {e}")
+
+
+def create_nautilus_service(
+    service_name: str,
+    selector_labels: dict,
+    namespace: str = "nautilus",
+    ports: list[dict] = None
+):
+    """Kubernetes ClusterIP Service 생성 함수"""
+    
+    if ports is None:
+        ports = [
+            {"port": 8002, "targetPort": 8002, "protocol": "TCP"},
+            {"port": 8003, "targetPort": 8003, "protocol": "TCP"}
+        ]
+    
+    service_ports = [
+        client.V1ServicePort(port=p["port"], target_port=p["targetPort"], protocol=p["protocol"])
+        for p in ports
+    ]
+    
+    service = client.V1Service(
+        metadata=client.V1ObjectMeta(name=service_name),
+        spec=client.V1ServiceSpec(
+            selector=selector_labels,
+            ports=service_ports,
+            type="ClusterIP"
+        )
+    )
+
+    try:
+        v1.create_namespaced_service(namespace=namespace, body=service)
+        print(f"✅ Service '{service_name}' created in namespace '{namespace}'")
+    except client.exceptions.ApiException as e:
+        if e.status == 409:
+            print(f"⚠️ Service '{service_name}' already exists")
+        else:
+            print(f"❌ Failed to create service '{service_name}': {e}")
+
 
 def create_client_deployment(project_id: str ,site: int, node_name: str, namespace: str = "nautilus", image: str = "nautilus-pv-updated:latest", replicas: int = 1, use_gpu: bool = True):
     """Client용 Deployment 생성 함수 (GPU 사용 여부 선택 가능)"""

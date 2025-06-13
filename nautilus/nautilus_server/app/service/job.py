@@ -6,7 +6,7 @@ from app.service.base import fetch_one, fetch_all, execute
 import subprocess
 from pathlib import Path
 import asyncio
-#from app.config import HOST
+from app.config import HOST
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
@@ -20,7 +20,6 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     RETURNING *;
     """
-    HOST = "172.17.0.1" #컨테이너에서 로컬로 통신
     cmd_str = (
         f'cd /workspace/nautilus/nautilus/api && '
         f'python3 run_export_job.py '
@@ -36,8 +35,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     print(f"🟢 Running command string: {cmd_str}")
 
     try:
-        #connect_get_namespaced_pod_exec(pod_name="mylocalhost", command=cmd_str)
-        exec_command_in_container(container_name="mylocalhost", command=cmd_str)
+        connect_get_namespaced_pod_exec(pod_name="mylocalhost", command=cmd_str)
 
     except Exception as e:
         print(f"❌ create_job failed: {e}")
@@ -51,6 +49,7 @@ async def create_job(project_id: str, data: JobCreate, pool) -> Job:
     )
     
     return Job(**row)
+
 
 
 async def get_job(project_id: str, job_id: str, pool) -> Optional[Job]:
@@ -122,7 +121,6 @@ async def update_job(project_id: str, job_id: str, data: JobUpdate, pool) -> Opt
     print(cmd_triggered)
     # Step 3: 조건 충족 시 exec 실행
     if cmd_triggered:
-        HOST = "172.17.0.1"
         cmd_str = (
             f'cd /workspace/nautilus/nautilus/api && '
             f'python3 run_export_job.py '
@@ -160,8 +158,7 @@ async def list_jobs(project_id, pool) -> List[Job]:
 async def exec_job(project_id: str, job_id: str):
     """execute_job.py 실행"""
     
-    #execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
-    execute_job_script = Path("../nautilus/api/run/run_execute_job_container.py").resolve()
+    execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
     
     execute_job_command = [
         "python3", str(execute_job_script),
@@ -205,3 +202,79 @@ async def get_job_status(project_id: str, job_id: str, pool) -> Optional[Job]:
 
     row = await fetch_one(pool, query, project_id, job_id)
     return Job(**row)
+
+
+async def create_job_container(project_id: str, data: JobCreate, pool) -> Job:
+    job_id = "j-kr-" + data.job_name
+    query = """
+    INSERT INTO jobs (project_id, job_id, job_name, description, tags, creator_id, creation_time, modification_time, job_status, client_status, aggr_function, admin_info, data_id, global_model_id, contri_est_method, num_global_iteration, num_local_epoch, job_config)
+    VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    RETURNING *;
+    """
+    HOST = "172.17.0.1" #컨테이너에서 로컬로 통신
+    cmd_str = (
+        f'cd /workspace/nautilus/nautilus/api && '
+        f'python3 run_export_job.py '
+        f'--contribution_method {data.contri_est_method} '
+        f'--server_url {HOST} '
+        f'--n_clients {len(data.data_id)} '
+        f'--num_rounds {data.num_global_iteration} '
+        f'--num_local_epoch {data.num_local_epoch} '
+        f'--job_name {job_id} '
+        f'--project_id {project_id}'
+    )
+
+    print(f"🟢 Running command string: {cmd_str}")
+
+    try:
+        #connect_get_namespaced_pod_exec(pod_name="mylocalhost", command=cmd_str)
+        exec_command_in_container(container_name="mylocalhost", command=cmd_str)
+
+    except Exception as e:
+        print(f"❌ create_job failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Step 3: DB에 Job 정보 저장
+    row = await fetch_one(
+        pool, query, project_id, job_id, data.job_name, data.description, data.tags, data.creator_id,
+        data.job_status, data.client_status, data.aggr_function, data.admin_info, data.data_id,
+        data.global_model_id, data.contri_est_method, data.num_global_iteration, data.num_local_epoch, data.job_config
+    )
+    
+    return Job(**row)
+
+
+async def exec_job_container(project_id: str, job_id: str):
+    """execute_job.py 실행"""
+    
+    #execute_job_script = Path("../nautilus/api/run/run_execute_job.py").resolve()  # nautilus/ 디렉토리에 위치
+    execute_job_script = Path("../nautilus/api/run/run_execute_job_container.py").resolve()
+    
+    execute_job_command = [
+        "python3", str(execute_job_script),
+        "--project_id", project_id,
+        "--job_id", job_id
+    ]
+    
+    print(f"Running execute_job.py: {' '.join(execute_job_command)}")
+    try:
+        # * 실시간 로그 출력하도록 변경
+        process = subprocess.Popen(
+            execute_job_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True  # * 문자열로 변환하여 실시간 출력
+        )
+
+        # * 표준 출력 및 오류 로그 실시간 출력
+        for line in process.stdout:
+            print(f"[exec_job.py LOG]: {line.strip()}")
+
+        for line in process.stderr:
+            print(f"[exec_job.py ERROR]: {line.strip()}")
+
+        process.wait()  # * 프로세스 종료까지 대기
+        print(f"* exec_job.py finished with exit code {process.returncode}")
+
+    except Exception as e:
+        print(f"* exec_job failed: {e}")

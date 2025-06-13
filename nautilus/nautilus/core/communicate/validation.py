@@ -53,8 +53,7 @@ def run_join_playbook(target_host, data_provider_id, master_node_ip):
   
   print(f"validation.py - run_join_playbook) Playbook execution finished with exit code {process.returncode}")
 
-
-def run_ansible_playbook(playbook_path, target_host):
+def run_ansible_playbook(target_host):
     """
     Ansible Playbook 실행 함수.
     - target_host가 'localhost'이면 로컬 모드로 실행하며 local_tar_path 인자를 포함
@@ -88,6 +87,10 @@ def run_ansible_playbook(playbook_path, target_host):
             f"../../workspace/ansible_project/inventory/host_vars/{target_host}.yml"
         ))
 
+        print(f"validation.py - run_ansible_playbook) target host: {target_host}")
+        playbook_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/ansible_project/playbook/load_nautilus_img.yml"))
+        print(f"validation.py - run_ansible_playbook) playbook_path: {playbook_path}")
+        
         command = [
             "ansible-playbook",
             "-i", f"{target_host},",
@@ -118,15 +121,6 @@ def run_ansible_playbook(playbook_path, target_host):
     process.stderr.close()
     process.wait()
     print(f"validation.py - run_ansible_playbook) load_nautilus_img execution finished with exit code {process.returncode}")
-
-
-### playbook생성. 선택한 data에 맞는 client의 host를 조회하여 반복문으로 함수 실행 
-def load_nautilus_image(target_host):
-  print(f"validation.py - load_nautilus_image) target host: {target_host}")
-  playbook_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../workspace/ansible_project/playbook/load_nautilus_img.yml"))
-  print(f"validation.py - load_nautilus_image) playbook_path: {playbook_path}")
-
-  run_ansible_playbook(playbook_path, target_host)
 
 
 def apply_nautilus_deployment(project_id: str, site: int, node_name: str, who: str):

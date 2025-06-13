@@ -12,13 +12,14 @@ from util.auto_save.utils import (
     execute_script_in_container,
 )
 from core.communicate.validation import (
-    load_nautilus_image,
+    run_ansible_playbook,
     apply_nautilus_deployment,
     copy_local_to_container,
     execute_command
 )
 from core.communicate.k8s import (
     get_pod_name_by_deployment
+    create_nautilus_service
 )
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -43,9 +44,18 @@ def main(config_name):
     nodes = config_data["nodes"]
 
     print(f"Starting Nautilus Deployment for Project: {project_id}")
-    load_nautilus_image("localhost")
-    print(f"master load_nautilus_image done..")
-'''    
+    
+    # 이미지 로드 
+    run_ansible_playbook("localhost")
+    print(f"master run_ansible_playbook done..")
+  
+    # 서버용 Service 생성 (mylocalhost DNS 제공)
+    create_nautilus_service(
+        service_name="mylocalhost",
+        selector_labels={"app": "nautilus"}
+    )
+    
+    # 서버 팟 배포
     server_pod_name = f"{project_id}-server" 
     apply_nautilus_deployment(project_id=project_id, site="none", node_name="master-node", who="server")
 
@@ -60,8 +70,8 @@ def main(config_name):
         print(f"Deploying Site-{site} | Node: {node_name} | Pod: {pod_name}")
 
         # 1. Nautilus Docker 이미지 로드
-        load_nautilus_image(target_host)
-        print(f"worker load_nautilus_image done..")
+        run_ansible_playbook(target_host)
+        print(f"worker run_ansible_playbook done..")
 
         # 2. Kubernetes 배포 실행
         apply_nautilus_deployment(project_id=project_id, site=site, node_name=node_name, who="client")
@@ -73,7 +83,7 @@ def main(config_name):
         # 3. Train 파일 컨테이너에 복사
         copy_local_to_container(pod_name=pod_full_name, local_file_path=train_py_path, container_path=container_path, namespace=namespace)
         print(f"copy_local_to_container done..")
-        
+'''          
     # 4. simulation 실행 - pass?
 
     print(f"pod_full_name searching for server")
