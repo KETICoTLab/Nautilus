@@ -52,7 +52,7 @@ def main(config_name):
     # 서버용 Service 생성 (mylocalhost DNS 제공)
     create_nautilus_service(
         service_name="mylocalhost",
-        namespace = "nautilus"
+        namespace = "nautilus",
         selector_labels={"app": "nautilus"}
     )
     
