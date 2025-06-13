@@ -138,7 +138,7 @@ async def list_projects(pool) -> List[Project]:
     return result
 
 
-async def validation_check(project_id: str):
+async def validation_check(project_id: str, pool):
     # provision.py 실행 (비동기 실행)
     provision_script = "../nautilus/api/run/validation_deploy.py"  # nautilus/ 디렉토리에 위치
     config_name = f"{project_id}_config.json"
