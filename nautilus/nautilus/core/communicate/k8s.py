@@ -254,7 +254,7 @@ def ensure_namespace_exists(namespace: str = "nautilus"):
     try:
         v1.read_namespace(namespace)
         print(f"[INFO] Namespace '{namespace}' already exists.")
-    except ApiException as e:
+    except client.ApiException as e:
         if e.status == 404:
             print(f"[INFO] Creating namespace '{namespace}'...")
             ns = client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
