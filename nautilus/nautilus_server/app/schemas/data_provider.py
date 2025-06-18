@@ -36,8 +36,8 @@ class DataProviderResponse(BaseModel):
     train_data_path: str
         
 class DataProviderDataBase(BaseModel):
-    item_code_id: str
-    data_name: str
+    item_code_id: Optional[str]
+    data_name: Optional[str]
     description: Optional[str] = None
     data: Optional[str] = None
 
@@ -46,7 +46,7 @@ class DataProviderDataCreate(DataProviderDataBase):
 
 
 class DataProviderData(DataProviderDataBase):
-    data_id: str
+    data_id: Optional[str]
     data_provider: Optional[DataProvider] = None 
     model_config = {
         "from_attributes": True,
@@ -54,7 +54,7 @@ class DataProviderData(DataProviderDataBase):
     }
     
 class DataProviderDataResponse(DataProviderDataBase):
-    data_id: str
+    data_id: Optional[str]
 
     model_config = {
         "from_attributes": True,
