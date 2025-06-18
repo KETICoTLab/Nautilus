@@ -250,6 +250,20 @@ def create_namespace(name: str):
         else:
             print(f"❌ Failed namespace creation \n {e}")
 
+def ensure_namespace_exists(namespace: str = "nautilus"):
+    try:
+        v1.read_namespace(namespace)
+        print(f"[INFO] Namespace '{namespace}' already exists.")
+    except ApiException as e:
+        if e.status == 404:
+            print(f"[INFO] Creating namespace '{namespace}'...")
+            ns = client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+            v1.create_namespace(ns)
+            print(f"[✅] Namespace '{namespace}' created.")
+        else:
+            raise
+
+
 def create_deployment(namespace: str, name: str, image: str, replicas: int = 1, container_port: int = 80):
     """Deployment 생성"""
     deployment = client.V1Deployment(

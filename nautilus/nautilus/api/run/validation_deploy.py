@@ -19,7 +19,8 @@ from core.communicate.validation import (
 from core.communicate.k8s import (
     get_pod_name_by_deployment,
     create_nautilus_service,
-    copy_to_container
+    copy_to_container,
+    ensure_namespace_exists
 )
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -44,7 +45,10 @@ def main(config_name):
     nodes = config_data["nodes"]
 
     print(f"Starting Nautilus Deployment for Project: {project_id}")
-    
+   
+    # 서비스 생성 전에 namespace 보장
+    ensure_namespace_exists(namespace = "nautilus")
+   
     # 이미지 로드 
     run_ansible_playbook("localhost")
     print(f"master run_ansible_playbook done..")
