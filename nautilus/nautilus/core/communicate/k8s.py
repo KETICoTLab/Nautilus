@@ -284,13 +284,12 @@ def create_nautilus_service(
     service_name: str,
     selector_labels: dict,
     namespace: str = "nautilus",
-    ports: list[dict] = None
 ):
-    if ports is None:
-        ports = [
-            {"name": "fed", "port": 8002, "targetPort": 8002, "protocol": "TCP"},
-            {"name": "admin", "port": 8003, "targetPort": 8003, "protocol": "TCP"}
-        ]
+
+    ports = [
+        {"name": "fed", "port": 8002, "targetPort": 8002, "protocol": "TCP"},
+        {"name": "admin", "port": 8003, "targetPort": 8003, "protocol": "TCP"}
+    ]
     
     service_ports = [
         client.V1ServicePort(
@@ -323,14 +322,13 @@ def create_client_deployment(project_id: str ,site: int, node_name: str, namespa
 
     # 리소스 설정 분기
     limits = {
-        "memory": "8Gi",
+        "memory": "10Gi",
         "cpu": "4"
     }
     requests = {
-        "memory": "4Gi",
+        "memory": "6Gi",
         "cpu": "2"
     }
-
     if use_gpu:
         limits["nvidia.com/gpu"] = "1"
         requests["nvidia.com/gpu"] = "1"
