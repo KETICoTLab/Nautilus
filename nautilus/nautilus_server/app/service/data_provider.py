@@ -147,9 +147,29 @@ async def update_data_provider(data_provider_id: str, data: DataProviderCreate, 
 
 
 async def delete_data_provider(data_provider_id: str, pool) -> bool:
-    query = "DELETE FROM data_providers WHERE data_provider_id = $1;"
-    result = await execute(pool, query, data_provider_id)
-    return result.endswith("DELETE 1")
+    # host_ip 조회
+    row = await fetch_one(pool, "SELECT host_information FROM data_providers WHERE data_provider_id = $1;", data_provider_id)
+    if not row:
+        return False
+
+    host_info = json.loads(row["host_information"])
+    ip_address = host_info.get("ip_address")
+    if not ip_address:
+        raise ValueError("Missing ip_address in host_information")
+
+    # Step 1: 종속된 데이터 삭제
+    await execute(pool, "DELETE FROM data WHERE data_provider_id = $1;", data_provider_id)
+
+    # Step 2: provider 삭제
+    result = await execute(pool, "DELETE FROM data_providers WHERE data_provider_id = $1;", data_provider_id)
+
+    # Step 3: ansible host_vars 파일 삭제
+    host_vars_path = Path(ANSIBLE_HOST_VARS_DIR).resolve() / f"{ip_address}.yml"
+    if host_vars_path.exists():
+        host_vars_path.unlink()  # 파일 삭제
+        print(f"🗑️ Deleted host_vars: {host_vars_path}")
+
+    return "DELETE" in result and result.endswith("1")
 
 async def list_data_providers(pool) -> List[DataProviderResponse]:
     query = "SELECT * FROM data_providers;"
