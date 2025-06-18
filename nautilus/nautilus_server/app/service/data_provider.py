@@ -214,24 +214,22 @@ async def list_data_provider_data(data_provider_id: str, pool) -> List[DataProvi
 async def list_data_provider_data_all(pool) -> List[DataProviderData]:
     query = """
     SELECT
-        d.data_id,
-        d.data_provider_id,
-        d.item_code_id,
-        d.data_name,
-        d.description,
-        d.data,
-
         dp.data_provider_id,
         dp.data_provider_name,
         dp.description AS provider_description,
         dp.tags,
         dp.creator_id,
         dp.train_code_path,
-        dp.train_data_path
+        dp.train_data_path,
 
-    FROM data d
-    JOIN data_providers dp
-      ON d.data_provider_id = dp.data_provider_id;
+        d.data_id,
+        d.item_code_id,
+        d.data_name,
+        d.description,
+        d.data
+
+    FROM data_providers dp
+    LEFT JOIN data d ON dp.data_provider_id = d.data_provider_id;
     """
     rows = await fetch_all(pool, query)
 
@@ -249,13 +247,14 @@ async def list_data_provider_data_all(pool) -> List[DataProviderData]:
             train_data_path=row_dict["train_data_path"]
         )
 
+        # data가 없는 경우도 포함되도록 처리
         data = DataProviderData(
-            data_id=row_dict["data_id"],
-            item_code_id=row_dict["item_code_id"],
-            data_name=row_dict["data_name"],
-            description=row_dict["description"],
-            data=row_dict["data"],
-            data_provider=data_provider  # ✅ 중첩 객체 포함
+            data_id=row_dict.get("data_id"),
+            item_code_id=row_dict.get("item_code_id"),
+            data_name=row_dict.get("data_name"),
+            description=row_dict.get("description"),
+            data=row_dict.get("data"),
+            data_provider=data_provider
         )
 
         result.append(data)
