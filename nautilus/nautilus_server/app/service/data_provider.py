@@ -53,10 +53,11 @@ async def create_ansible_host_vars(host_information, data_provider_id):
     host_vars_path = host_vars_dir / f"{ip_address}.yml"
 
     # yml 파일 내용 생성
-    yml_content = f"""ansible_become_password: "{password}"
-                ansible_ssh_user: "{username}"
-                ansible_ssh_password: "{password}"
-                """
+    yml_content = (
+        f'ansible_become_password: "{password}"\n'
+        f'ansible_ssh_user: "{username}"\n'
+        f'ansible_ssh_password: "{password}"\n'
+    )
 
     # YAML 파일 저장
     with open(host_vars_path, "w", encoding="utf-8") as yml_file:
